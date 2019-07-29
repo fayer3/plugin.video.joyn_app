@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<addon id="plugin.video.joyn_app" name="Joyn" version="0.1.0" provider-name="fayer3">
+<addon id="plugin.video.joyn_app" name="Joyn" version="0.1.1" provider-name="fayer3">
     <requires>
         <import addon="xbmc.python" version="2.25.0"/>
         <import addon="script.module.routing" version="0.2.0"/>
@@ -22,7 +22,7 @@
         <website>https://joyn.de/</website>
         <email>fb4472 (at) aon.at</email>
         <source>https://github.com/fayer3/plugin.video.zappntv</source>
-        <news>erster Release</news>
+        <news>Limit von nur 25 Sendungen behoben</news>
         <assets>
             <icon>resources/icon.png</icon>
             <fanart>resources/fanart.png</fanart>

@@ -223,8 +223,13 @@ def add_livestreams():
 
 @plugin.route('/channel/id=<channel_id>/')
 def show_channel(channel_id):
-    content = json.loads(get_url(ids.channel_url.format(channel_id), critical=True))
+    current = 0
+    content = json.loads(get_url(ids.channel_url.format(current, channel_id), critical=True))
     add_series_from_fetch(content)
+    while len(content['response']['data']) == ids.channel_limit:
+        current += ids.channel_limit
+        content = json.loads(get_url(ids.channel_url.format(current, channel_id), critical=True))
+        add_series_from_fetch(content)
     endOfDirectory(plugin.handle)
 
 @plugin.route('/seasons/id=<show_id>/')
@@ -627,6 +632,19 @@ def get_url(url, headers={}, cache=False, critical=False):
             log("(getUrl) ERROR - ERROR - ERROR : ########## {0} === {1} ##########".format(url, failure))
         elif hasattr(e, 'reason'):
             log("(getUrl) ERROR - ERROR - ERROR : ########## {0} === {1} ##########".format(url, failure))
+        try:
+            data = ''
+            if e.info().get('Content-Encoding') == 'gzip':
+                # decompress content
+                buffer = StringIO(e.read())
+                deflatedContent = gzip.GzipFile(fileobj=buffer)
+                data = deflatedContent.read()
+            else:
+                data = e.read()
+            log('Error: ' + data.decode('utf-8'))
+        except:
+            log('couldn\'t read Error content')
+            pass
         if critical:
             kodiutils.notification("ERROR GETTING URL", failure)
             return sys.exit(0)
@@ -659,6 +677,19 @@ def post_url(url, postdata, headers={}, json = False, critical=False):
             log("(getUrl) ERROR - ERROR - ERROR : ########## {0} === {1} === {2} ##########".format(url, postdata, failure))
         elif hasattr(e, 'reason'):
             log("(getUrl) ERROR - ERROR - ERROR : ########## {0} === {1} === {2} ##########".format(url, postdata, failure))
+        try:
+            data = ''
+            if e.info().get('Content-Encoding') == 'gzip':
+                # decompress content
+                buffer = StringIO(e.read())
+                deflatedContent = gzip.GzipFile(fileobj=buffer)
+                data = deflatedContent.read()
+            else:
+                data = e.read()
+            log('Error: ' + data.decode('utf-8'))
+        except:
+            log('couldn\'t read Error content')
+            pass
         if critical:
             if hasattr(e, 'code') and getattr(e, 'code') == 422:
                 kodiutils.notification("ERROR GETTING URL", kodiutils.get_string(32003))

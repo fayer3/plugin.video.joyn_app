@@ -45,7 +45,8 @@ tvshow_url = 'https://middleware.p7s1.io/joyn/v1/tvshows?ids={0}'
 #tvshow_selection = '&limit=1&subType=Hauptfilm&selection={data{id,channelId,visibilities,duration,metadata{de}}}&filter=visible&type=tvShow'
 tvshow_selection = '&limit=1&subType=Hauptfilm&selection=%7Bdata%7Bid%2CchannelId%2Cvisibilities%2Cduration%2Cmetadata%7Bde%7D%7D%7D&filter=visible&type=tvShow'
 
-channel_url = 'https://middleware.p7s1.io/joyn/v1/tvshows?skip=0&selection=%7Bdata%7Bid%2CchannelId%2Cvisibilities%2Cduration%2Cmetadata%7Bde%7D%7D%7D&filter=visible&type=tvShow%2Cmovie&channelId={0}'
+channel_url = 'https://middleware.p7s1.io/joyn/v1/tvshows?skip={0}&limit=5000&selection=%7Bdata%7Bid%2CchannelId%2Cvisibilities%2Cduration%2Cmetadata%7Bde%7D%7D%7D&filter=visible&type=tvShow%2Cmovie&channelId={1}'
+channel_limit = 5000
 
 video_info_url = 'https://middleware.p7s1.io/joyn/v1/metadata/video/{0}?country=de&devicetype=phone&recommendations=2'
 
