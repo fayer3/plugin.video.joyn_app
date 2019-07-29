@@ -1,0 +1,52 @@
+# Kodi Media Center language file
+# Addon Name: Zappn TV
+# Addon id: plugin.video.zappntv
+# Addon Provider: fayer3
+msgid ""
+msgstr ""
+"Project-Id-Version: XBMC Addons\n"
+"Report-Msgid-Bugs-To: alanwww1@xbmc.org\n"
+"POT-Creation-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: Kodi Translation Team\n"
+"Language-Team: English (http://www.transifex.com/projects/p/xbmc-addons/language/en/)\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Language: de\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#This is a comment
+
+msgctxt "#32001"
+msgid "Featured"
+msgstr ""
+
+msgctxt "#32002"
+msgid "Available:[CR][COLOR chartreuse]{0:s}[/COLOR][CR][COLOR chartreuse]{1:s}[/COLOR][CR][CR]"
+msgstr "Verfügbar:[CR][COLOR chartreuse]{0:s}[/COLOR][CR][COLOR chartreuse]{1:s}[/COLOR][CR][CR]"
+
+msgctxt "#32003"
+msgid "not available in this country"
+msgstr "Nicht verfügbar in diesem Land"
+
+msgctxt "#32004"
+msgid "unsupported DRM '{0}'"
+msgstr "nicht unterstütztes DRM '{0}'"
+
+msgctxt "#32005"
+msgid "couldn't get stream, try again"
+msgstr "Stream konnte nicht abgefragt werden, versuch es noch einmal"
+
+msgctxt "#32025"
+msgid "DRM content requires Kodi 18.0"
+msgstr "Für DRM Inhalte wird Kodi 18.0 benötigt"
+
+
+msgctxt "#32102"
+msgid "number of simultanious network requests"
+msgstr "Anzahl an gleichzeitigen Netzwerkanfragen"
+
+msgctxt "#32103"
+msgid "fake ip to bypass geoblocking"
+msgstr "fälsche IP um Geoblocking zu umgehen"

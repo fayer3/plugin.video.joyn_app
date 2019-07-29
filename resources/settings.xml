@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<settings>
+    <setting id="debug" type="bool" label="32101" default="false"/>
+    <setting id="simultanious_requests" type="number" label="32102" default="10"/>
+    <setting id="fake_ip" type="bool" label="32103" default="false"/>
+</settings>
