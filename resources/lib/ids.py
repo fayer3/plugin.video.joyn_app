@@ -39,7 +39,7 @@ seasons_selection = '&subType=Hauptfilm&sortBy=seasonsOrder&selection=%7Bdata%7B
 
 season_url = 'https://middleware.p7s1.io/joyn/v1/videos?seasonId={0}'
 #season_selection = '&sortBy=seasonsOrder&sortAscending=true&skip=0&subType=Hauptfilm&selection={data{id,channelId,visibilities,duration,metadata{de}}}'
-season_selection = '&sortBy=seasonsOrder&sortAscending=true&skip=0&subType=Hauptfilm&selection=%7Bdata%7Bid%2CchannelId%2Cvisibilities%2Cduration%2Cmetadata%7Bde%7D%7D%7D'
+season_selection = '&sortBy=seasonsOrder&sortAscending=true&skip=0&subType=Hauptfilm&selection=%7Bdata%7Bid%2CchannelId%2Cvisibilities%2Cduration%2CtvShow%2Cmetadata%7Bde%7D%7D%7D'
 
 tvshow_url = 'https://middleware.p7s1.io/joyn/v1/tvshows?ids={0}'
 #tvshow_selection = '&limit=1&subType=Hauptfilm&selection={data{id,channelId,visibilities,duration,metadata{de}}}&filter=visible&type=tvShow'

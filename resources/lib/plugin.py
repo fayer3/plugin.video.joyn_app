@@ -53,6 +53,9 @@ try:
 except ImportError:
     multiprocess = False
 
+from six.moves.html_parser import HTMLParser
+html_parser = HTMLParser()
+
 ADDON = xbmcaddon.Addon()
 logger = logging.getLogger(ADDON.getAddonInfo('id'))
 kodilogging.config()
@@ -323,7 +326,7 @@ def show_season(season_id):
             if desc['type'] == 'main':
                 description = desc['text']
         listitem.setProperty('IsPlayable', 'true')
-        listitem.setInfo(type='Video', infoLabels={'Title': name, 'Plot': Note_1+description, 'TvShowTitle': name, 'Season': item['metadata']['de']['seasonNumber'], 'episode': item['metadata']['de']['episodeNumber'], 'Duration': item['metadata']['de']['video']['duration'], 'Date': goDATE, 'mediatype': 'episode'})
+        listitem.setInfo(type='Video', infoLabels={'Title': name, 'Plot': Note_1+description, 'TvShowTitle': html_parser.unescape(item['tvShow']['titles']['default']), 'Season': item['metadata']['de']['seasonNumber'], 'episode': item['metadata']['de']['episodeNumber'], 'Duration': item['metadata']['de']['video']['duration'], 'Date': goDATE, 'mediatype': 'episode'})
         listitem.addContextMenuItems([('Queue', 'Action(Queue)')])
         addDirectoryItem(plugin.handle,plugin.url_for(
             play_episode, episode_id=item['id']), listitem)
