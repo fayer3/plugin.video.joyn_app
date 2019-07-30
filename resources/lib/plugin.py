@@ -53,7 +53,11 @@ try:
 except ImportError:
     multiprocess = False
 
-from six.moves.html_parser import HTMLParser
+try:
+    from html.parser import HTMLParser
+except ImportError:
+    from HTMLParser import HTMLParser
+#from six.moves.html_parser import HTMLParser
 html_parser = HTMLParser()
 
 ADDON = xbmcaddon.Addon()
@@ -457,14 +461,14 @@ def play_episode(episode_id):
         inputstream_installed = is_helper._has_inputstream()
 
     if inputstream_installed and is_helper.check_inputstream():
-        playitem.setPath(video_data['videoUrl'].rpartition("?")[0]+"|User-Agent=vvs-native-android/1.0.10 (Linux;Android 7.1.1) ExoPlayerLib/2.8.1")
+        playitem.setPath(video_data['videoUrl'].rpartition("?")[0]+"|User-Agent=vvs-native-android/3.1.0.301003151 (Linux;Android 7.1.1) ExoPlayerLib/2.10.0")
         #playitem.path= = ListItem(label=xbmc.getInfoLabel('Container.ShowTitle'), path=urls["urls"]["dash"][drm_name]["url"]+"|User-Agent=vvs-native-android/1.0.10 (Linux;Android 7.1.1) ExoPlayerLib/2.8.1")
         log('video url: '+video_data['videoUrl'].rpartition("?")[0])
         log('licenseUrl: '+video_data['licenseUrl'])
         playitem.setProperty('inputstreamaddon', is_helper.inputstream_addon)
         playitem.setProperty('inputstream.adaptive.manifest_type', 'mpd')
         playitem.setProperty('inputstream.adaptive.license_type', 'com.widevine.alpha')
-        playitem.setProperty('inputstream.adaptive.license_key', video_data['licenseUrl'] +"|User-Agent=vvs-native-android/1.0.10 (Linux;Android 7.1.1) ExoPlayerLib/2.8.1" +'|R{SSM}|')
+        playitem.setProperty('inputstream.adaptive.license_key', video_data['licenseUrl'] +"|User-Agent=vvs-native-android/3.1.0.301003151 (Linux;Android 7.1.1) ExoPlayerLib/2.10.0&Content-Type=application/octet-stream" +'|R{SSM}|')
         setResolvedUrl(plugin.handle, True, playitem)
     else:
         kodiutils.notification('ERROR', kodiutils.get_string(32019).format(drm))
@@ -535,13 +539,13 @@ def play_live(stream_id, brand):
         inputstream_installed = is_helper._has_inputstream()
 
     if inputstream_installed and is_helper.check_inputstream():
-        playitem.setPath(video_url+"|User-Agent=vvs-native-android/1.0.10 (Linux;Android 7.1.1) ExoPlayerLib/2.8.1")
+        playitem.setPath(video_url+"|User-Agent=vvs-native-android/3.1.0.301003151 (Linux;Android 7.1.1) ExoPlayerLib/2.10.0")
         #playitem.path= = ListItem(label=xbmc.getInfoLabel('Container.ShowTitle'), path=urls["urls"]["dash"][drm_name]["url"]+"|User-Agent=vvs-native-android/1.0.10 (Linux;Android 7.1.1) ExoPlayerLib/2.8.1")
         playitem.setProperty('inputstreamaddon', is_helper.inputstream_addon)
         playitem.setProperty('inputstream.adaptive.manifest_type', 'mpd')
         playitem.setProperty('inputstream.adaptive.license_type', 'com.widevine.alpha')
         playitem.setProperty("inputstream.adaptive.manifest_update_parameter", "full")
-        playitem.setProperty('inputstream.adaptive.license_key', video_data['licenseUrl'] +"|User-Agent=vvs-native-android/1.0.10 (Linux;Android 7.1.1) ExoPlayerLib/2.8.1" +'|R{SSM}|')
+        playitem.setProperty('inputstream.adaptive.license_key', video_data['licenseUrl'] +"|User-Agent=vvs-native-android/3.1.0.301003151 (Linux;Android 7.1.1) ExoPlayerLib/2.10.0" +'|R{SSM}|')
         setResolvedUrl(plugin.handle, True, playitem)
     else:
         kodiutils.notification('ERROR', kodiutils.get_string(32019).format(drm))
