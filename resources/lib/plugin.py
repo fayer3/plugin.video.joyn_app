@@ -456,6 +456,8 @@ def play_episode(episode_id):
     if inputstream_installed and is_helper.check_inputstream():
         playitem.setPath(video_data['videoUrl'].rpartition("?")[0]+"|User-Agent=vvs-native-android/1.0.10 (Linux;Android 7.1.1) ExoPlayerLib/2.8.1")
         #playitem.path= = ListItem(label=xbmc.getInfoLabel('Container.ShowTitle'), path=urls["urls"]["dash"][drm_name]["url"]+"|User-Agent=vvs-native-android/1.0.10 (Linux;Android 7.1.1) ExoPlayerLib/2.8.1")
+        log('video url: '+video_data['videoUrl'].rpartition("?")[0])
+        log('licenseUrl: '+video_data['licenseUrl'])
         playitem.setProperty('inputstreamaddon', is_helper.inputstream_addon)
         playitem.setProperty('inputstream.adaptive.manifest_type', 'mpd')
         playitem.setProperty('inputstream.adaptive.license_type', 'com.widevine.alpha')
