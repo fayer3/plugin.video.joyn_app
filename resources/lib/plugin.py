@@ -429,18 +429,28 @@ def play_episode(episode_id):
     sig = episode_id + ',' + entitlement_token_data['entitlement_token'] + ',' + clientData + codecs.encode(ids.xxtea_key.encode('utf-8'),'hex').decode('utf-8')
     sig = hashlib.sha1(sig.encode('UTF-8')).hexdigest()
 
-    video_url = playoutBaseUrl+ids.video_playback_url.format(episode_id=episode_id, entitlement_token=entitlement_token_data['entitlement_token'], clientData=clientData, sig=sig)
+    video_data_url = playoutBaseUrl+ids.video_playback_url.format(episode_id=episode_id, entitlement_token=entitlement_token_data['entitlement_token'], clientData=clientData, sig=sig)
 
     playitem = ListItem(content['response']['video']['titles']['default'])
 
-    video_data = json.loads(post_url(video_url,postdata='server', critical=True))
+    video_data = json.loads(post_url(video_data_url,postdata='server', critical=True))
+    video_url = ''
     if video_data['vmap']:
         #got add try again
-        video_data = json.loads(post_url(video_url,postdata='server', critical=True))
-    if video_data['vmap']:
+        log("stream with add: {0}".format(video_data['videoUrl']))
         kodiutils.notification('INFO', kodiutils.get_string(32005))
-        setResolvedUrl(plugin.handle, False, playitem)
-        return
+        video_url = video_data['videoUrl']
+        video_url_data = get_url(video_url, critical = True)
+        # get base url
+        base_urls = re.findall('<BaseURL>(.*?)</BaseURL>',video_url_data)
+        if len(base_urls) > 0 and base_urls[0].startswith('http'):
+            video_url = base_urls[0]+'.mpd|User-Agent=vvs-native-android/3.1.0.301003151 (Linux;Android 7.1.1) ExoPlayerLib/2.10.0'
+        else:
+            kodiutils.notification('INFO', kodiutils.get_string(32005))
+            setResolvedUrl(plugin.handle, False, playitem)
+            return
+    else:
+        video_url = video_data['videoUrl'].rpartition("?")[0]+"|User-Agent=vvs-native-android/3.1.0.301003151 (Linux;Android 7.1.1) ExoPlayerLib/2.10.0"
 
     is_helper = None
     if video_data['drm'] != 'widevine':
@@ -461,14 +471,14 @@ def play_episode(episode_id):
         inputstream_installed = is_helper._has_inputstream()
 
     if inputstream_installed and is_helper.check_inputstream():
-        playitem.setPath(video_data['videoUrl'].rpartition("?")[0]+"|User-Agent=vvs-native-android/3.1.0.301003151 (Linux;Android 7.1.1) ExoPlayerLib/2.10.0")
+        playitem.setPath(video_url)
         #playitem.path= = ListItem(label=xbmc.getInfoLabel('Container.ShowTitle'), path=urls["urls"]["dash"][drm_name]["url"]+"|User-Agent=vvs-native-android/1.0.10 (Linux;Android 7.1.1) ExoPlayerLib/2.8.1")
-        log('video url: '+video_data['videoUrl'].rpartition("?")[0])
-        log('licenseUrl: '+video_data['licenseUrl'])
+        log('video url: {0}'.format(video_url))
+        log('licenseUrl: {0}'.format(video_data['licenseUrl']))
         playitem.setProperty('inputstreamaddon', is_helper.inputstream_addon)
         playitem.setProperty('inputstream.adaptive.manifest_type', 'mpd')
         playitem.setProperty('inputstream.adaptive.license_type', 'com.widevine.alpha')
-        playitem.setProperty('inputstream.adaptive.license_key', video_data['licenseUrl'] +"|User-Agent=vvs-native-android/3.1.0.301003151 (Linux;Android 7.1.1) ExoPlayerLib/2.10.0&Content-Type=application/octet-stream" +'|R{SSM}|')
+        playitem.setProperty('inputstream.adaptive.license_key', video_data['licenseUrl'] +"|User-Agent=vvs-native-android/3.1.0.301003151 (Linux;Android 7.1.1) ExoPlayerLib/2.10.0&Content-Type=application/octet-stream|R{SSM}|")
         setResolvedUrl(plugin.handle, True, playitem)
     else:
         kodiutils.notification('ERROR', kodiutils.get_string(32019).format(drm))
@@ -499,14 +509,14 @@ def play_live(stream_id, brand):
     sig = stream_id + ',' + entitlement_token_data['entitlement_token'] + ',' + clientData + codecs.encode(ids.xxtea_key.encode('utf-8'),'hex').decode('utf-8')
     sig = hashlib.sha1(sig.encode('UTF-8')).hexdigest()
 
-    video_url = playoutBaseUrl+ids.live_playback_url.format(stream_id=stream_id, entitlement_token=entitlement_token_data['entitlement_token'], clientData=clientData, sig=sig)
+    video_data_url = playoutBaseUrl+ids.live_playback_url.format(stream_id=stream_id, entitlement_token=entitlement_token_data['entitlement_token'], clientData=clientData, sig=sig)
 
     playitem = ListItem(brand)
 
-    video_data = json.loads(post_url(video_url, postdata='server', critical=True))
+    video_data = json.loads(post_url(video_data_url, postdata='server', critical=True))
     if video_data['vmap']:
         #got add try again
-        video_data = json.loads(post_url(video_url, postdata='server', critical=True))
+        video_data = json.loads(post_url(video_data_url, postdata='server', critical=True))
     if video_data['vmap']:
         kodiutils.notification('INFO', kodiutils.get_string(32005))
         setResolvedUrl(plugin.handle, False, playitem)
