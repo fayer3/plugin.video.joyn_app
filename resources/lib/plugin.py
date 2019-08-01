@@ -14,6 +14,7 @@ from resources.lib import xxtea
 from xbmcgui import ListItem
 from xbmcplugin import addDirectoryItem, endOfDirectory, setResolvedUrl, setContent
 from distutils.version import LooseVersion
+from datetime import datetime, timedelta
 
 import codecs
 
@@ -204,28 +205,101 @@ def add_tvchannel_from_fetch(content):
             show_channel, channel_id=item['channelId']), listitem, True)
 
 def add_livestreams():
+    dt_utcnow = datetime.utcnow().replace(second=0)
+    dt_from = dt_utcnow - timedelta(hours=4)
+    dt_to = dt_utcnow + timedelta(hours=10)
+    epg_content = json.loads(get_url(ids.epg_url.format(quote(dt_from.strftime('%Y-%m-%d %H:%M:%S')), quote(dt_to.strftime('%Y-%m-%d %H:%M:%S'))), critical=True))
+
     content = json.loads(get_url(ids.livestream_url, critical=True))
     for item in content['response']['data']:
-        name = ''
-        for title in item['metadata']['de']['titles']:
-            if title['type'] == 'main':
-                name = title['text']
-        listitem = ListItem(name)
-        # get images
-        icon=''
-        for image in item['metadata']['de']['images']:
-            if image['type'] == 'BRAND_LOGO':
-                icon = ids.image_url.format(image['url'])
-        listitem.setArt({'icon': icon, 'thumb': icon, 'poster': icon})
-        description = ''
-        for desc in item['metadata']['de']['descriptions']:
-            if desc['type'] == 'main':
-                description = desc['text']
+        dt_now = datetime.now()
+        epg_now = None
+        epg_next = None
+        for epg in epg_content['response']['data']:
+            if epg['channelId'] == item['channelId']:
+                if datetime.fromtimestamp(epg['startTime']) < dt_now and dt_now < datetime.fromtimestamp(epg['endTime']):
+                    epg_now = epg
+                elif datetime.fromtimestamp(epg['startTime']) > dt_now:
+                    epg_next = epg
+                if epg_now and epg_next:
+                    break
+
+        brand = ''
+        infoLabels = {}
+        art = {}
+        if epg_now:
+            brand = epg_now['tvChannelName']
+            infoLabels.update({'title': epg_now['title'] if epg_now['title'] else epg_now['tvShow']['title']})
+            infoLabels.update({'tvShowTitle': epg_now['tvShow']['title']})
+            infoLabels.update({'year': epg_now['productionYear']})
+
+            local_start_time = datetime.fromtimestamp(epg_now['startTime'])
+            local_end_time = datetime.fromtimestamp(epg_now['endTime'])
+            plot = '{0} - {1}'.format(local_start_time.strftime('%H:%M'), local_end_time.strftime('%H:%M'))
+            if epg_next:
+                next_title = epg_next.get('title').encode('utf-8') if epg_next.get('title') else None
+                next_show = epg_next.get('tvShow').get('title').encode('utf-8') if epg_next.get('tvShow') else ''
+                
+                plot += '\n{0}: [COLOR blue]{1}[/COLOR] {2}'.format(kodiutils.get_string(32006), next_show, next_title) if next_title and next_show != '' and next_title != next_show else '\nDanach: {0}'.format(next_title if next_title else next_show)
+
+            plot += '\n\n'
+            plot += epg_now['description'].encode('utf-8') if epg_now['description'] else ''
+            infoLabels.update({'plot': plot})
+
+            genres = []
+            for genre in epg_now['genres']:
+                if genre['title'] not in genres:
+                    genres.append(genre['title'])
+            if len(genres) > 0:
+                infoLabels.update({'genre': ', '.join(genres)})
+
+            if len(epg_now['images']) > 0:
+                for image in epg_now['images']:
+                    if image['subType'] == 'art_direction':
+                        art.update({'fanart': ids.image_url.format(image['url'])})
+                    elif image['subType'] == 'cover':
+                        art.update({'thumb': ids.image_url.format(image['url'])})
+            else:
+                for image in item['metadata']['de']['images']:
+                    if image['type'] == 'BRAND_LOGO':
+                        icon = ids.image_url.format(image['url'])
+                        art.update({'icon': icon, 'thumb': icon, 'poster': icon})
+        else:
+            for title in item['metadata']['de']['titles']:
+                if title['type'] == 'main':
+                    brand = title['text']
+                    infoLabels.update({'title': brand})
+                    infoLabels.update({'tvShowTitle': brand})
+
+            # get images
+            for image in item['metadata']['de']['images']:
+                if image['type'] == 'BRAND_LOGO':
+                    icon = ids.image_url.format(image['url'])
+                    art.update({'icon': icon, 'thumb': icon, 'poster': icon})
+
+            for desc in item['metadata']['de']['descriptions']:
+                if desc['type'] == 'main':
+                    infoLabels.update({'plot': desc['text']})
+
+        if infoLabels.get('title') and infoLabels.get('tvShowTitle') and infoLabels.get('title') != infoLabels.get('tvShowTitle'):
+            infoLabels.update({'mediatype': 'episode'})
+        else:
+            infoLabels.update({'mediatype': 'video'})
+
+        label = ''
+        if brand != infoLabels.get('tvShowTitle'):
+            label = infoLabels.get('tvShowTitle').encode('utf-8') if not infoLabels.get('title') or infoLabels.get('tvShowTitle') == infoLabels.get('title') else '[COLOR blue]{0}[/COLOR] {1}'.format(infoLabels.get('tvShowTitle').encode('utf-8'), infoLabels.get('title').encode('utf-8'))
+            label = '[COLOR orange]{0}[/COLOR] {1}'.format(brand.encode('utf-8'), label)
+        else:
+            label = brand
+
+        listitem = ListItem(label)
+        listitem.setArt(art)
         listitem.setProperty('IsPlayable', 'true')
-        listitem.setInfo(type='Video', infoLabels={'Title': name, 'Plot': description, 'TvShowTitle': name, 'mediatype': 'video'})
+        listitem.setInfo(type='Video', infoLabels=infoLabels)
         if len(item['metadata']['de']['livestreams']) > 0:
             addDirectoryItem(plugin.handle,plugin.url_for(
-                play_live, stream_id=item['metadata']['de']['livestreams'][0]['streamId'], brand=name.encode('utf-8')), listitem)
+                play_live, stream_id=item['metadata']['de']['livestreams'][0]['streamId'], brand=brand.encode('utf-8')), listitem)
 
 
 @plugin.route('/channel/id=<channel_id>/')
@@ -431,7 +505,7 @@ def play_episode(episode_id):
 
     video_data_url = playoutBaseUrl+ids.video_playback_url.format(episode_id=episode_id, entitlement_token=entitlement_token_data['entitlement_token'], clientData=clientData, sig=sig)
 
-    playitem = ListItem(content['response']['video']['titles']['default'])
+    playitem = ListItem()
 
     video_data = json.loads(post_url(video_data_url,postdata='server', critical=True))
     video_url = ''
@@ -511,7 +585,7 @@ def play_live(stream_id, brand):
 
     video_data_url = playoutBaseUrl+ids.live_playback_url.format(stream_id=stream_id, entitlement_token=entitlement_token_data['entitlement_token'], clientData=clientData, sig=sig)
 
-    playitem = ListItem(brand)
+    playitem = ListItem()
 
     video_data = json.loads(post_url(video_data_url, postdata='server', critical=True))
     if video_data['vmap']:

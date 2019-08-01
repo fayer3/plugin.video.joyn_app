@@ -38,6 +38,10 @@ msgctxt "#32005"
 msgid "couldn't get stream, try again"
 msgstr ""
 
+msgctxt "#32006"
+msgid "Next"
+msgstr ""
+
 msgctxt "#32025"
 msgid "DRM content requires Kodi 18.0"
 msgstr ""
