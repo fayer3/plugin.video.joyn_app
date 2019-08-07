@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<addon id="plugin.video.joyn_app" name="Joyn" version="0.1.1" provider-name="fayer3">
+<addon id="plugin.video.joyn_app" name="Joyn" version="0.2.0" provider-name="fayer3">
     <requires>
         <import addon="xbmc.python" version="2.25.0"/>
         <import addon="script.module.routing" version="0.2.0"/>
@@ -8,6 +8,7 @@
     <extension point="xbmc.python.pluginsource" library="main.py">
         <provides>video</provides>
     </extension>
+    <extension point="xbmc.python.library" library="favorite.py"/>
     <extension point="xbmc.addon.metadata">
         <summary lang="de_DE">JOYN Levestream und Mediathek</summary>
         <description lang="de_DE">Bietet die inhalte von joyn.de, basierend auf der Android App</description>
@@ -22,7 +23,12 @@
         <website>https://joyn.de/</website>
         <email>fb4472 (at) aon.at</email>
         <source>https://github.com/fayer3/plugin.video.zappntv</source>
-        <news>Limit von nur 25 Sendungen behoben</news>
+        <news>- EPG hinzugefügt
+        - JOYN Favoriten hinzugefügt
+        - Suche hinzugefügt
+        - Name von TV shows korregiert
+        - VOD auf lebreelec korregiert
+        </news>
         <assets>
             <icon>resources/icon.png</icon>
             <fanart>resources/fanart.png</fanart>

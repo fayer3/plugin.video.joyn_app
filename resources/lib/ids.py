@@ -10,8 +10,8 @@ __profile__ = xbmc.translatePath(xbmcaddon.Addon().getAddonInfo('profile'))
 if not xbmcvfs.exists(__profile__):
     xbmcvfs.mkdirs(__profile__)
 
-cache_file_path = __profile__+"config_cache.json"
-tag_file_path = __profile__+"tag_cache.json"
+cache_file_path = __profile__ + "config_cache.json"
+tag_file_path = __profile__ + "tag_cache.json"
 
 # data for requests
 
@@ -25,32 +25,40 @@ xxtea_key = '5C7838365C7864665C786638265C783064595C783935245C7865395C7838323F5C7
 
 config_url = 'https://playerconfig.prd.platform.s.joyn.de/df0aba535c694114d8e2b193b9affd97.json'
 
-overview_url = 'https://middleware.p7s1.io/joyn/v1/ui?path=/'
+base_url = 'https://middleware.p7s1.io/joyn/v1/'
+
+overview_url = base_url + 'ui?path=/'
 #livestream_url = 'https://middleware.p7s1.io/joyn/v1/brands?selection={data{id, channelId ,agofCodes,metadata}}&streamIds=true&mock=false'
-livestream_url = 'https://middleware.p7s1.io/joyn/v1/brands?selection=%7Bdata%7Bid%2C%20channelId%20%2CagofCodes%2Cmetadata%7D%7D&streamIds=true&mock=false'
+livestream_url = base_url + 'brands?selection=%7Bdata%7Bid%2C%20channelId%20%2CagofCodes%2Cmetadata%7D%7D&streamIds=true&mock=false'
 
-epg_url = 'https://middleware.p7s1.io/joyn/v1/epg?selection=%7BtotalCount%2Cdata%7Bid%2Ctitle%2Cdescription%2CtvShow%2Ctype%2CproductionYear%2CtvChannelName%2CchannelId%2CstartTime%2CendTime%2CrepeatTime%2Cvideo%2Cgenres%7Btype%2Ctitle%7D%2Cimages%28subType%3A%22cover%2Clogo%2Cart_direction%22%29%7Burl%2CsubType%7D%7D%7D&skip=0&limit=1000&from={0}&to={1}&sortBy=startTime&sortAscending=true'
+#https://middleware.p7s1.io/joyn/v1/epg?selection={totalCount,data{id,title,description,tvShow,type,productionYear,tvChannelName,channelId,startTime,endTime,repeatTime,video,genres{type,title},images(subType:"cover,logo,art_direction"){url,subType}}}&skip=0&limit=1000&from={0}&to={1}&sortBy=startTime&sortAscending=true'
+epg_url = base_url + 'epg?selection=%7BtotalCount%2Cdata%7Bid%2Ctitle%2Cdescription%2CtvShow%2Ctype%2CproductionYear%2CtvChannelName%2CchannelId%2CstartTime%2CendTime%2CrepeatTime%2Cvideo%2Cgenres%7Btype%2Ctitle%7D%2Cimages%28subType%3A%22cover%2Clogo%2Cart_direction%22%29%7Burl%2CsubType%7D%7D%7D&skip=0&limit=1000&from={0}&to={1}&sortBy=startTime&sortAscending=true'
 
-fetch_url = 'https://middleware.p7s1.io/joyn/v1/fetch/{0}'
+epg_now_url = base_url + 'epg/now?selection=%7BtotalCount%2Cdata%7Bid%2Ctitle%2Cdescription%2CtvShow%2Ctype%2CproductionYear%2CtvChannelName%2CchannelId%2CstartTime%2CendTime%2CrepeatTime%2Cvideo%2Cgenres%7Btype%2Ctitle%7D%2Cimages%28subType%3A%22cover%2Clogo%2Cart_direction%22%29%7Burl%2CsubType%7D%7D%7D&skip=0&limit=5000&sortAscending=true'
+
+epg_channel_url = base_url + 'epg?selection=%7BtotalCount%2Cdata%7Bid%2Ctitle%2Cdescription%2CtvShow%2Ctype%2CproductionYear%2CtvChannelName%2CchannelId%2CstartTime%2CendTime%2CrepeatTime%2Cvideo%2Cgenres%7Btype%2Ctitle%7D%2Cimages%28subType%3A%22cover%2Clogo%2Cart_direction%22%29%7Burl%2CsubType%7D%7D%7D&skip=0&limit=1000&sortBy=startTime&sortAscending=true&channelId={channel}'
+
+fetch_url = base_url + 'fetch/{0}'
 #fetch_selection = 'selection={data{id,visibilities, channelId ,agofCodes,duration,metadata{de}}}'
 fetch_selection = 'selection=%7Bdata%7Bid%2Cvisibilities%2C%20channelId%20%2CagofCodes%2Cduration%2Cmetadata%7Bde%7D%7D%7D'
 
-seasons_url = 'https://middleware.p7s1.io/joyn/v1/seasons?tvShowId={0}'
+seasons_url = base_url + 'seasons?tvShowId={0}&subType=Hauptfilm&sortBy=seasonsOrder&selection=%7Bdata%7Bid%2CchannelId%2Cvisibilities%2Cduration%2Cmetadata%7Bde%7D%7D%7D&sortAscending=true'
 #seasons_selection = '&subType=Hauptfilm&sortBy=seasonsOrder&selection={data{id,channelId,visibilities,duration,metadata{de}}}&sortAscending=true'
-seasons_selection = '&subType=Hauptfilm&sortBy=seasonsOrder&selection=%7Bdata%7Bid%2CchannelId%2Cvisibilities%2Cduration%2Cmetadata%7Bde%7D%7D%7D&sortAscending=true'
 
-season_url = 'https://middleware.p7s1.io/joyn/v1/videos?seasonId={0}'
+season_url = base_url + 'videos?seasonId={0}&sortBy=seasonsOrder&sortAscending=true&skip=0&subType=Hauptfilm&selection=%7Bdata%7Bid%2CchannelId%2Cvisibilities%2Cduration%2CtvShow%2Cmetadata%7Bde%7D%7D%7D'
 #season_selection = '&sortBy=seasonsOrder&sortAscending=true&skip=0&subType=Hauptfilm&selection={data{id,channelId,visibilities,duration,metadata{de}}}'
-season_selection = '&sortBy=seasonsOrder&sortAscending=true&skip=0&subType=Hauptfilm&selection=%7Bdata%7Bid%2CchannelId%2Cvisibilities%2Cduration%2CtvShow%2Cmetadata%7Bde%7D%7D%7D'
 
-tvshow_url = 'https://middleware.p7s1.io/joyn/v1/tvshows?ids={0}'
+tvshow_url = base_url + 'tvshows?ids={0}&limit=1&subType=Hauptfilm&selection=%7Bdata%7Bid%2CchannelId%2Cvisibilities%2Cduration%2Cmetadata%7Bde%7D%7D%7D&filter=visible&type=tvShow'
 #tvshow_selection = '&limit=1&subType=Hauptfilm&selection={data{id,channelId,visibilities,duration,metadata{de}}}&filter=visible&type=tvShow'
-tvshow_selection = '&limit=1&subType=Hauptfilm&selection=%7Bdata%7Bid%2CchannelId%2Cvisibilities%2Cduration%2Cmetadata%7Bde%7D%7D%7D&filter=visible&type=tvShow'
 
-channel_url = 'https://middleware.p7s1.io/joyn/v1/tvshows?skip={0}&limit=5000&selection=%7Bdata%7Bid%2CchannelId%2Cvisibilities%2Cduration%2Cmetadata%7Bde%7D%7D%7D&filter=visible&type=tvShow%2Cmovie&channelId={1}'
+channel_url = base_url + 'tvshows?skip={0}&limit=5000&selection=%7Bdata%7Bid%2CchannelId%2Cvisibilities%2Cduration%2Cmetadata%7Bde%7D%7D%7D&filter=visible&type=tvShow%2Cmovie&channelId={1}'
 channel_limit = 5000
 
-video_info_url = 'https://middleware.p7s1.io/joyn/v1/metadata/video/{0}?country=de&devicetype=phone&recommendations=2'
+search_tvshow_url = base_url + 'tvshows?search={0}&limit=5000&selection=%7Bdata%7Bid%2CchannelId%2Cvisibilities%2Cduration%2Cmetadata%7Bde%7D%7D%7D&filter=visible&type=tvShow'
+search_movie_url = base_url + 'tvshows?search={0}&limit=5000&subType=Hauptfilm&selection=%7Bdata%7Bid%2CchannelId%2Cvisibilities%2Cduration%2Cmetadata%7Bde%7D%7D%7D&filter=visible&type=movie'
+search_limit = 5000
+
+video_info_url = base_url + 'metadata/video/{0}?country=de&devicetype=phone&recommendations=2'
 
 image_url = '{0}/profile:original'
 

@@ -42,10 +42,49 @@ msgctxt "#32006"
 msgid "Next"
 msgstr "Danach"
 
+msgctxt "#32007"
+msgid "* My JOYN-Favourites *"
+msgstr "* Meine JOYN-Favoriten *"
+
+msgctxt "#32008"
+msgid "ADDON - Settings"
+msgstr "ADDON - Einstellungen"
+
+msgctxt "#32009"
+msgid "Add to JOYN-Favorites"
+msgstr "zu JOYN-Favoriten hinzufügen"
+
+msgctxt "#32010"
+msgid "Remove from JOYN-Favorites"
+msgstr "aus JOYN-Favoriten entfernen"
+
+msgctxt "#32011"
+msgid "SUCCESSFULL:"
+msgstr "ERFOLGREICH:"
+
+msgctxt "#32012"
+msgid "[COLOR green]ADDED[/COLOR] * [COLOR blue]{0}[/COLOR] * [COLOR green]TO FAVORITES ![/COLOR]"
+msgstr "[COLOR blue]{0}[/COLOR] * [COLOR green]ZU DEN FAVORITEN HINZUGEFÜGT ![/COLOR]"
+
+msgctxt "#32013"
+msgid "[COLOR red]REMOVED[/COLOR] * [COLOR blue]{0}[/COLOR] * [COLOR red]FROM FAVORITES ![/COLOR]"
+msgstr "[COLOR blue]{0}[/COLOR] * [COLOR red]AUS DEN FAVORITEN ENTFERNT ![/COLOR]"
+
+msgctxt "#32014"
+msgid "Search"
+msgstr "Suche"
+
+msgctxt "#32015"
+msgid "EPG from [COLOR chartreuse]{0}[/COLOR]"
+msgstr "EPG vom [COLOR chartreuse]{0}[/COLOR]"
+
+msgctxt "#32016"
+msgid "past EPG"
+msgstr "früheres EPG"
+
 msgctxt "#32025"
 msgid "DRM content requires Kodi 18.0"
 msgstr "Für DRM Inhalte wird Kodi 18.0 benötigt"
-
 
 msgctxt "#32102"
 msgid "number of simultanious network requests"
@@ -54,3 +93,7 @@ msgstr "Anzahl an gleichzeitigen Netzwerkanfragen"
 msgctxt "#32103"
 msgid "fake ip to bypass geoblocking"
 msgstr "fälsche IP um Geoblocking zu umgehen"
+
+msgctxt "#32104"
+msgid "Add the channelname to the livestream title"
+msgstr "Füge den Sendernamen zum Livestream Titel hinzu"

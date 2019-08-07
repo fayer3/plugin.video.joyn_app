@@ -4,3 +4,9 @@ v0.1.0
 - First Release
 v0.1.1
 - fix limit of 25 tvshows
+v0.2.0
+- added EPG
+- added JOYN Favorites
+- added search
+- fix name of some TV shows
+- fix VOD on lebreelec

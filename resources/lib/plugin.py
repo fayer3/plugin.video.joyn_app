@@ -7,16 +7,28 @@ import xbmcgui
 import xbmcvfs
 import xbmc
 import xbmcplugin
+
+from xbmcgui import ListItem
+from xbmcplugin import addDirectoryItem, endOfDirectory, setResolvedUrl, setContent
+
 from resources.lib import kodiutils
 from resources.lib import kodilogging
 from resources.lib import ids
 from resources.lib import xxtea
-from xbmcgui import ListItem
-from xbmcplugin import addDirectoryItem, endOfDirectory, setResolvedUrl, setContent
+
 from distutils.version import LooseVersion
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 
 import codecs
+import locale
+import time
+import hashlib
+import json
+import gzip
+import sys
+import re
+import base64
+import random
 
 try:
     import inputstreamhelper
@@ -24,6 +36,13 @@ try:
 except ImportError:
     inputstream = False
 
+try:
+    from multiprocessing.pool import ThreadPool
+    multiprocess = True
+except ImportError:
+    multiprocess = False
+
+# import of modules that are different between PY2 and PY3
 try:
     from StringIO import StringIO
 except ImportError:
@@ -37,28 +56,10 @@ except ImportError:
     from urllib import quote, unquote
     from urllib2 import Request, urlopen, HTTPError
 
-import locale
-import time
-from datetime import date, datetime, timedelta
-import hashlib
-import json
-import gzip
-import sys
-import re
-import base64
-import random
-
-try:
-    from multiprocessing.pool import ThreadPool
-    multiprocess = True
-except ImportError:
-    multiprocess = False
-
 try:
     from html.parser import HTMLParser
 except ImportError:
     from HTMLParser import HTMLParser
-#from six.moves.html_parser import HTMLParser
 html_parser = HTMLParser()
 
 ADDON = xbmcaddon.Addon()
@@ -67,6 +68,7 @@ kodilogging.config()
 plugin = routing.Plugin()
 
 __profile__ = xbmc.translatePath(ADDON.getAddonInfo('profile'))
+ADDON_PATH = xbmc.translatePath(ADDON.getAddonInfo('path'))
 
 if not xbmcvfs.exists(__profile__):
     xbmcvfs.mkdirs(__profile__)
@@ -74,7 +76,7 @@ if not xbmcvfs.exists(__profile__):
 favorites_file_path = __profile__+"favorites.json"
 favorites = {}
 
-icon_path = ADDON.getAddonInfo('path')+"/resources/logos/{0}.png"
+icon_path = ADDON.getAddonInfo('path')+"/resources/icons/{0}.png"
 setContent(plugin.handle, 'tvshows')
 #setContent(plugin.handle, '')
 
@@ -107,7 +109,134 @@ def index():
                 addDirectoryItem(plugin.handle,plugin.url_for(
                     show_fetch, fetch_id=cur['fetch']['id'], type=cur['type'], query=quote(json.dumps(query)), header=quote(json.dumps(header))), ListItem(name), True)
                     #show_fetch, fetch_id=cur['fetch']['id'], query='&'.join(query), header='&'.join(header)), ListItem(name), True)
+    addDirectoryItem(plugin.handle, plugin.url_for(
+        show_epg), ListItem('EPG'), True)
+    addDirectoryItem(plugin.handle, plugin.url_for(
+        search), ListItem(kodiutils.get_string(32014)), True)
+    addDirectoryItem(plugin.handle, plugin.url_for(
+        show_category, 'favorites'), ListItem(kodiutils.get_string(32007)), True)
+    addDirectoryItem(plugin.handle, plugin.url_for(
+        open_settings), ListItem(kodiutils.get_string(32008)))
     endOfDirectory(plugin.handle)
+
+@plugin.route('/search/')
+def search():
+    query = query = xbmcgui.Dialog().input(kodiutils.get_string(32014))
+    if query != '':
+        content = json.loads(get_url(ids.search_tvshow_url.format(quote(query)), critical = True))
+        add_series_from_fetch(content)
+        #TODO check if this works search movies
+        content = json.loads(get_url(ids.search_movie_url.format(quote(query)), critical = True))
+        add_series_from_fetch(content)
+    endOfDirectory(plugin.handle)
+
+@plugin.route('/epg/')
+def show_epg():
+    content = json.loads(get_url(ids.epg_now_url, critical = True))
+    xbmcplugin.addSortMethod(plugin.handle, xbmcplugin.SORT_METHOD_LABEL)
+    #log(json.dumps(content))
+    for channel in content['response']['data']:
+        listitem = get_epg_listitem(channel, channel_in_label = True)
+        addDirectoryItem(plugin.handle,plugin.url_for(
+            show_channel_epg, channel_id=channel['channelId']), listitem, True)
+    endOfDirectory(plugin.handle)
+
+@plugin.route('/epg/id=<channel_id>/')
+def show_channel_epg(channel_id):
+    addDirectoryItem(plugin.handle,plugin.url_for(
+        show_channel_epg_past, channel_id=channel_id), ListItem(kodiutils.get_string(32016)), True)
+    dt_utcnow = datetime.utcnow().date()
+    content = json.loads(get_url(ids.epg_channel_url.format(channel = channel_id)+'&from='+quote(dt_utcnow.strftime('%Y-%m-%d %H:%M:%S')), critical = True))
+    #log(json.dumps(content))
+    if len(content['response']['data']) > 0:
+        date_max = datetime.fromtimestamp(content['response']['data'][len(content['response']['data'])-1]['startTime'])
+        for n in range(int ((date_max.date() - dt_utcnow).days+1)):
+            cur_date = (dt_utcnow + timedelta(days=n))
+            addDirectoryItem(plugin.handle,plugin.url_for(
+                show_channel_epg_date, channel_id=channel_id, day=cur_date.day, month=cur_date.month, year=cur_date.year), ListItem(kodiutils.get_string(32015).format(cur_date.strftime('%Y-%m-%d'))), True)
+
+    endOfDirectory(plugin.handle)
+
+@plugin.route('/epg/id=<channel_id>/past/')
+def show_channel_epg_past(channel_id):
+    dt_utcnow = datetime.utcnow().date()
+    content = json.loads(get_url(ids.epg_channel_url.format(channel = channel_id)+'&to='+quote(dt_utcnow.strftime('%Y-%m-%d %H:%M:%S')), critical = True))
+    #log(json.dumps(content))
+    if len(content['response']['data']) > 0:
+        date_min = datetime.fromtimestamp(content['response']['data'][0]['startTime'])
+        for n in range(int ((dt_utcnow - date_min.date()).days)):
+            cur_date = (dt_utcnow - timedelta(days=n))
+            addDirectoryItem(plugin.handle,plugin.url_for(
+                show_channel_epg_date, channel_id=channel_id, day=cur_date.day, month=cur_date.month, year=cur_date.year), ListItem(kodiutils.get_string(32015).format(cur_date.strftime('%Y-%m-%d'))), True)
+    endOfDirectory(plugin.handle)
+
+@plugin.route('/epg/id=<channel_id>/day=<day>/month=<month>/year=<year>/')
+def show_channel_epg_date(channel_id, day, month, year):
+    log('EPG for channel "{0}" and date "{1}.{2}.{3}"'.format(channel_id, day, month, year))
+
+    cur_date = date(int(year), int(month), int(day))
+
+    content = json.loads(get_url(ids.epg_channel_url.format(channel = channel_id)+'&from='+quote(cur_date.strftime('%Y-%m-%d %H:%M:%S'))+'&to='+quote((cur_date+timedelta(days=1)).strftime('%Y-%m-%d %H:%M:%S')), critical = True))
+    for channel in content['response']['data']:
+        listitem = get_epg_listitem(channel, start_in_label = True)
+        addDirectoryItem(plugin.handle, plugin.url_for(show_info), listitem)
+    endOfDirectory(plugin.handle)
+
+def get_epg_listitem(channeldata, channel_in_label = False, start_in_label = False):
+    infoLabels = {}
+    art = {}
+    infoLabels.update({'title': channeldata['title'].encode('utf-8') if channeldata['title'] else channeldata['tvShow']['title'].encode('utf-8')})
+    infoLabels.update({'tvShowTitle': channeldata['tvShow']['title'].encode('utf-8')})
+    infoLabels.update({'year': channeldata['productionYear']})
+    channelname =  channeldata['tvChannelName'].encode('utf-8')
+
+    local_start_time = datetime.fromtimestamp(channeldata['startTime'])
+    local_end_time = datetime.fromtimestamp(channeldata['endTime'])
+    plot = '[COLOR chartreuse]{0} - {1}[/COLOR]'.format(local_start_time.strftime('%H:%M'), local_end_time.strftime('%H:%M'))
+    plot += '[CR][CR]'
+    plot += channeldata['description'].encode('utf-8') if channeldata['description'] else ''
+    infoLabels.update({'plot': plot})
+
+    genres = []
+    for genre in channeldata['genres']:
+        #log('genre: {0}'.format(genre))
+        #log('genres: {0}'.format(genres))
+        if genre['title'] and genre['title'] not in genres:
+            genres.append(genre['title'])
+    if len(genres) > 0:
+        infoLabels.update({'genre': ', '.join(genres)})
+
+    if len(channeldata['images']) > 0:
+        for image in channeldata['images']:
+            if image['subType'] == 'art_direction' or image['subType'] == 'logo':
+                art.update({'fanart': ids.image_url.format(image['url'])})
+            elif image['subType'] == 'cover':
+                art.update({'thumb': ids.image_url.format(image['url'])})
+
+    infoLabels.update({'mediatype': 'episode'})
+
+    label = ''
+    if channel_in_label:
+        if channelname != infoLabels.get('tvShowTitle'):
+            label = infoLabels.get('tvShowTitle') if not infoLabels.get('title') or infoLabels.get('tvShowTitle') == infoLabels.get('title') else '[COLOR blue]{0}[/COLOR]  {1}'.format(infoLabels.get('tvShowTitle'), infoLabels.get('title'))
+            label = '[COLOR lime]{0}[/COLOR]  {1}'.format(channelname, label)
+            if kodiutils.get_setting_as_bool('channel_name_in_stream_title'):
+                infoLabels['title'] = label
+        else:
+            label = channelname
+    else:
+        label = infoLabels.get('tvShowTitle') if not infoLabels.get('title') or infoLabels.get('tvShowTitle') == infoLabels.get('title') else '[COLOR blue]{0}[/COLOR]  {1}'.format(infoLabels.get('tvShowTitle'), infoLabels.get('title'))
+    if start_in_label:
+        label = '[COLOR chartreuse]{0}[/COLOR]: '.format(local_start_time.strftime('%H:%M')) + label
+
+    listitem = ListItem(label)
+    listitem.setArt(art)
+    listitem.setInfo(type='Video', infoLabels=infoLabels)
+    return listitem
+
+@plugin.route('/info/')
+def show_info():
+    xbmc.executebuiltin('Action(Info)')
 
 @plugin.route('/fetch/id=<fetch_id>/type=<type>/')
 def show_fetch(fetch_id, type):
@@ -179,7 +308,9 @@ def add_series_from_fetch(content):
             if desc['type'] == 'main':
                 description = desc['text']
         listitem.setInfo(type='Video', infoLabels={'Title': name, 'Plot': description, 'TvShowTitle': name})
-        addDirectoryItem(plugin.handle,plugin.url_for(
+        add_favorites_context_menu(listitem, plugin.url_for(
+            show_seasons, show_id=item['id']), name, description, icon, poster, thumbnail, fanart)
+        addDirectoryItem(plugin.handle, plugin.url_for(
             show_seasons, show_id=item['id']), listitem, True)
 
 def add_tvchannel_from_fetch(content):
@@ -239,10 +370,10 @@ def add_livestreams():
             if epg_next:
                 next_title = epg_next.get('title').encode('utf-8') if epg_next.get('title') else None
                 next_show = epg_next.get('tvShow').get('title').encode('utf-8') if epg_next.get('tvShow') else ''
-                
-                plot += '\n{0}: [COLOR blue]{1}[/COLOR] {2}'.format(kodiutils.get_string(32006), next_show, next_title) if next_title and next_show != '' and next_title != next_show else '\nDanach: {0}'.format(next_title if next_title else next_show)
 
-            plot += '\n\n'
+                plot += '[CR]{0}: [COLOR blue]{1}[/COLOR] {2}'.format(kodiutils.get_string(32006), next_show, next_title) if next_title and next_show != '' and next_title != next_show else '[CR]{0}: {1}'.format(kodiutils.get_string(32006),next_title if next_title else next_show)
+
+            plot += '[CR][CR]'
             plot += epg_now['description'].encode('utf-8') if epg_now['description'] else ''
             infoLabels.update({'plot': plot})
 
@@ -284,12 +415,14 @@ def add_livestreams():
         if infoLabels.get('title') and infoLabels.get('tvShowTitle') and infoLabels.get('title') != infoLabels.get('tvShowTitle'):
             infoLabels.update({'mediatype': 'episode'})
         else:
-            infoLabels.update({'mediatype': 'video'})
-
+            # also use episode, because with 'video' it's not possible to view information
+            infoLabels.update({'mediatype': 'episode'})
         label = ''
         if brand != infoLabels.get('tvShowTitle'):
-            label = infoLabels.get('tvShowTitle').encode('utf-8') if not infoLabels.get('title') or infoLabels.get('tvShowTitle') == infoLabels.get('title') else '[COLOR blue]{0}[/COLOR] {1}'.format(infoLabels.get('tvShowTitle').encode('utf-8'), infoLabels.get('title').encode('utf-8'))
-            label = '[COLOR orange]{0}[/COLOR] {1}'.format(brand.encode('utf-8'), label)
+            label = infoLabels.get('tvShowTitle').encode('utf-8') if not infoLabels.get('title') or infoLabels.get('tvShowTitle') == infoLabels.get('title') else '[COLOR blue]{0}[/COLOR]  {1}'.format(infoLabels.get('tvShowTitle').encode('utf-8'), infoLabels.get('title').encode('utf-8'))
+            label = '[COLOR lime]{0}[/COLOR]  {1}'.format(brand.encode('utf-8'), label)
+            if kodiutils.get_setting_as_bool('channel_name_in_stream_title'):
+                infoLabels['title'] = label
         else:
             label = brand
 
@@ -315,50 +448,71 @@ def show_channel(channel_id):
 
 @plugin.route('/seasons/id=<show_id>/')
 def show_seasons(show_id):
-    content_tvshow = json.loads(get_url(ids.tvshow_url.format(show_id)+ids.tvshow_selection, critical = True))
+    content_tvshow = json.loads(get_url(ids.tvshow_url.format(show_id), critical = False))
     icon=''
     poster = ''
     fanart = ''
     thumbnail = ''
-    for image in content_tvshow['response']['data'][0]['metadata']['de']['images']:
-        if image['type'] == 'PRIMARY':
-            thumbnail = ids.image_url.format(image['url'])
-        elif image['type'] == 'ART_LOGO':
-            icon = ids.image_url.format(image['url'])
-        elif image['type'] == 'HERO_LANDSCAPE':
-            fanart = ids.image_url.format(image['url'])
-        elif image['type'] == 'HERO_PORTRAIT':
-            poster = ids.image_url.format(image['url'])
-    if not poster:
-        poster = thumbnail
-    if not fanart:
-        fanart = thumbnail
-    content = json.loads(get_url(ids.seasons_url.format(show_id)+ids.seasons_selection, critical = True))
-    for item in content['response']['data']:
-        name = ''
-        for title in item['metadata']['de']['titles']:
-            if title['type'] == 'main':
-                name = title['text']
-        listitem = ListItem(name)
-        # get images
-        icon=''
-        for image in item['metadata']['de']['images']:
+    series_name = ''
+    series_desc = ''
+    if content_tvshow:
+        for item in content_tvshow['response']['data']:
+            for title in item['metadata']['de']['titles']:
+                if title['type'] == 'main':
+                    series_name = title['text']
+                    break
+            for desc in item['metadata']['de']['descriptions']:
+                if desc['type'] == 'main':
+                    series_desc = desc['text']
+                    break
+            if series_name != '' and series_desc != '':
+                break
+
+        for image in content_tvshow['response']['data'][0]['metadata']['de']['images']:
             if image['type'] == 'PRIMARY':
+                thumbnail = ids.image_url.format(image['url'])
+            elif image['type'] == 'ART_LOGO':
                 icon = ids.image_url.format(image['url'])
-        listitem.setArt({'icon': icon, 'thumb': thumbnail, 'poster': poster, 'fanart': fanart})
-        description = ''
-        for desc in item['metadata']['de']['descriptions']:
-            if desc['type'] == 'main':
-                description = desc['text']
-        listitem.setInfo(type='Video', infoLabels={'Title': name, 'Plot': description, 'TvShowTitle': name})
-        addDirectoryItem(plugin.handle,plugin.url_for(
-            show_season, season_id=item['id']), listitem, True)
+            elif image['type'] == 'HERO_LANDSCAPE':
+                fanart = ids.image_url.format(image['url'])
+            elif image['type'] == 'HERO_PORTRAIT':
+                poster = ids.image_url.format(image['url'])
+        if not poster:
+            poster = thumbnail
+        if not fanart:
+            fanart = thumbnail
+    content = json.loads(get_url(ids.seasons_url.format(show_id), critical = False))
+    if content:
+        for item in content['response']['data']:
+            name = ''
+            if 'seasonNumber' in str(item['metadata']['de']) and str(item['metadata']['de']['seasonNumber']) != "":
+                name = 'Staffel '+str(item['metadata']['de']['seasonNumber'])
+            else:
+                for title in item['metadata']['de']['titles']:
+                    if title['type'] == 'main':
+                        name = title['text']
+            listitem = ListItem(name)
+            # get images
+            icon=''
+            for image in item['metadata']['de']['images']:
+                if image['type'] == 'PRIMARY':
+                    icon = ids.image_url.format(image['url'])
+            listitem.setArt({'icon': icon, 'thumb': thumbnail, 'poster': poster, 'fanart': fanart})
+            description = ''
+            for desc in item['metadata']['de']['descriptions']:
+                if desc['type'] == 'main':
+                    description = desc['text']
+            listitem.setInfo(type='Video', infoLabels={'Title': name, 'Plot': description, 'TvShowTitle': name})
+            addDirectoryItem(plugin.handle,plugin.url_for(
+                show_season, season_id=item['id']), listitem, True)
+    add_favorites_folder(plugin.url_for(show_seasons, show_id),
+        series_name, series_desc, icon, poster, thumbnail, fanart)
     endOfDirectory(plugin.handle)
 
 @plugin.route('/season/id=<season_id>/')
 def show_season(season_id):
     setContent(plugin.handle, 'tvshows')
-    content = json.loads(get_url(ids.season_url.format(season_id)+ids.season_selection, critical = True))
+    content = json.loads(get_url(ids.season_url.format(season_id), critical = True))
     for item in content['response']['data']:
         goDATE = None
         toDATE = None
@@ -412,19 +566,11 @@ def show_season(season_id):
 
 @plugin.route('/settings')
 def open_settings():
-    #playitem = ListItem(label='video', path='https://gist.githubusercontent.com/fayer3/0ee27fe789128467e28221c256fafdff/raw/5a88c6ab1b05fd393f1621ee8561f67a8e8515ab/gistfile1.txt')
-    #playitem = ListItem(label='video', path=ADDON.getAddonInfo('path')+"/resources/temp.mpd")
-    playitem = ListItem(label='video', path='https://cf.t1p-vod-playout-prod.aws.route71.net/origin/116021_a_pr64q9mojah_2019-7-17_23-1/a_pr64q9mojah.ism/.mpd?filter=(type%3D%3D%22video%22%26%26MaxHeight%3C%3D576)%7C%7C(type%3D%3D%22audio%22%26%26FourCC%3D%3D%22AACL%22%26%26systemBitrate%3E100000)')
-    playitem.setProperty('inputstreamaddon', 'inputstream.adaptive')
-    playitem.setProperty('inputstream.adaptive.manifest_type', 'mpd')
-    playitem.setProperty('inputstream.adaptive.license_type', 'com.widevine.alpha')
-    playitem.setProperty('inputstream.adaptive.license_key', 'https://prosieben-ctr.live.ott.irdeto.com/licenseServer/widevine/v1/prosieben/license?contentId=a_pr64q9mojah&ls_session=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IjFiMTJjM2ViLTExZGUtNDhlNi1hY2Y3LTEwYzliNzdiMmY0ZCJ9.eyJqdGkiOiJkZWY3M2QyMC1hY2Q0LTExZTktODVkNi01YmRkZGIyOTExNjMiLCJzdWIiOiJhbm9ueW1vdXMtdXNlcnMiLCJhaWQiOiJwcm9zaWViZW4iLCJpc3MiOiJwcm9zaWViZW4iLCJpYXQiOjE1NjM4MzY1ODgsImV4cCI6MTU2Mzg1MDk4OH0.-y_SoHK_0Ee1_c5SdHCy0gVTJrYfP_OipCD-3_T2N7g|'+'|R{SSM}|')
-
-    setResolvedUrl(plugin.handle, True, playitem)
+    kodiutils.show_settings()
 
 @plugin.route('/category/<category_id>')
 def show_category(category_id):
-    if category_id == "favorites":
+    if category_id == 'favorites':
         xbmcplugin.addSortMethod(plugin.handle, xbmcplugin.SORT_METHOD_LABEL)
         global favorites
         if not favorites and xbmcvfs.exists(favorites_file_path):
@@ -433,8 +579,9 @@ def show_category(category_id):
             favorites_file.close()
 
         for item in favorites:
-            listitem = ListItem(favorites[item]["name"])
-            listitem.setArt({'icon': favorites[item]["icon"], 'thumb':favorites[item]["icon"], 'poster':favorites[item]["icon"], 'fanart' : favorites[item]["fanart"]})
+            listitem = ListItem(favorites[item]['name'])
+            listitem.setArt({'icon': favorites[item]['icon'], 'thumb': favorites[item]['thumbnail'], 'poster': favorites[item]['poster'], 'fanart': favorites[item]['fanart']})
+            listitem.setInfo('Video', {'plot': favorites[item]['desc']})
             addDirectoryItem(plugin.handle, url=item,
                 listitem=listitem, isFolder=True)
     else:
@@ -443,7 +590,7 @@ def show_category(category_id):
             if category_id == category['id']:
                 if multiprocess:
                     threads = []
-                    pool = ThreadPool(processes=kodiutils.get_setting_as_int("simultanious_requests"))
+                    pool = ThreadPool(processes=kodiutils.get_setting_as_int('simultanious_requests'))
                 for item in category['items']:
                     query = []
                     header = []
@@ -453,8 +600,8 @@ def show_category(category_id):
                         elif param['in'] == 'header':
                             header.append(param['name'])
                         else:
-                            kodiutils.notification("ERROR", "new param location " + param['in'])
-                            log("new param location " + param['in'])
+                            kodiutils.notification('ERROR', 'new param location ' + param['in'])
+                            log('new param location ' + param['in'])
                             log(json.dumps(param))
                     #fetch(fetch_id=item['fetch']['id'], query=query, header=header)
                     if multiprocess:
@@ -628,8 +775,8 @@ def play_live(stream_id, brand):
         playitem.setProperty('inputstreamaddon', is_helper.inputstream_addon)
         playitem.setProperty('inputstream.adaptive.manifest_type', 'mpd')
         playitem.setProperty('inputstream.adaptive.license_type', 'com.widevine.alpha')
-        playitem.setProperty("inputstream.adaptive.manifest_update_parameter", "full")
-        playitem.setProperty('inputstream.adaptive.license_key', video_data['licenseUrl'] +"|User-Agent=vvs-native-android/3.1.0.301003151 (Linux;Android 7.1.1) ExoPlayerLib/2.10.0" +'|R{SSM}|')
+        playitem.setProperty("inputstream.adaptive.manifest_update_parameter", 'full')
+        playitem.setProperty('inputstream.adaptive.license_key', video_data['licenseUrl'] + '|User-Agent=vvs-native-android/3.1.0.301003151 (Linux;Android 7.1.1) ExoPlayerLib/2.10.0|R{SSM}|')
         setResolvedUrl(plugin.handle, True, playitem)
     else:
         kodiutils.notification('ERROR', kodiutils.get_string(32019).format(drm))
@@ -639,7 +786,7 @@ def utc_to_local(dt):
     if time.localtime().tm_isdst: return dt - timedelta(seconds=time.altzone)
     else: return dt - timedelta(seconds=time.timezone)
 
-def add_favorites_folder(path, name, icon, fanart):
+def add_favorites_folder(path, name, desc, icon, poster, thumbnail, fanart):
     global favorites
     if not favorites and xbmcvfs.exists(favorites_file_path):
         favorites_file = xbmcvfs.File(favorites_file_path)
@@ -648,24 +795,60 @@ def add_favorites_folder(path, name, icon, fanart):
 
     if not favorites or path not in favorites:
         # add favorites folder
-        #addDirectoryItem(plugin.handle, url=plugin.url_for(add_favorite, query="%s***%s###%s###%s" % (path, name, icon, fanart)), listitem=ListItem(kodiutils.get_string(32004)))
-        addDirectoryItem(plugin.handle, url=plugin.url_for(add_favorite, path=quote(codecs.encode(path, 'UTF-8')), name=quote(codecs.encode(name, 'UTF-8')), icon=quote(codecs.encode(icon, 'UTF-8')), fanart=quote(codecs.encode(fanart, 'UTF-8'))), listitem=ListItem(kodiutils.get_string(32008)))
+        listitem = ListItem(kodiutils.get_string(32009))
+        listitem.setArt({'icon': icon, 'thumb': thumbnail, 'poster': poster, 'fanart': fanart})
+        addDirectoryItem(plugin.handle, url=plugin.url_for(add_favorite,
+            path=quote(codecs.encode(path, 'UTF-8')), name=quote(codecs.encode(name, 'UTF-8')),
+            desc=quote(codecs.encode(desc, 'UTF-8')), icon=quote(codecs.encode(icon, 'UTF-8')),
+            poster=quote(codecs.encode(poster, 'UTF-8')), thumbnail=quote(codecs.encode(thumbnail, 'UTF-8')),
+            fanart=quote(codecs.encode(fanart, 'UTF-8'))), listitem=listitem)
     else:
         # remove favorites
-        addDirectoryItem(plugin.handle, url=plugin.url_for(remove_favorite, query=quote(codecs.encode(path, 'UTF-8'))),
-            listitem=ListItem(kodiutils.get_string(32009)))
+        listitem = ListItem(kodiutils.get_string(32010))
+        listitem.setArt({'icon': icon, 'thumb': thumbnail, 'poster': poster, 'fanart': fanart})
+        addDirectoryItem(plugin.handle, url=plugin.url_for(remove_favorite, query=quote(codecs.encode(path, 'UTF-8'))), listitem=listitem)
+
+def add_favorites_context_menu(listitem, path, name, desc, icon, poster, thumbnail, fanart):
+    global favorites
+    if not favorites and xbmcvfs.exists(favorites_file_path):
+        favorites_file = xbmcvfs.File(favorites_file_path)
+        favorites = json.load(favorites_file)
+        favorites_file.close()
+
+    if not favorites or path not in favorites:
+        # add favorites
+        listitem.addContextMenuItems([(kodiutils.get_string(32009), 'RunScript('+ADDON.getAddonInfo('id')+
+            ',add,' + quote(codecs.encode(path, 'UTF-8')) + ',' + quote(codecs.encode(name, 'UTF-8')) +
+            ',' + quote(codecs.encode(desc, 'UTF-8')) + ',' + quote(codecs.encode(icon, 'UTF-8')) +
+            ',' + quote(codecs.encode(poster, 'UTF-8')) + ',' + quote(codecs.encode(thumbnail, 'UTF-8')) +
+            ',' + quote(codecs.encode(fanart, 'UTF-8')) + ')')])
+    else:
+        # remove favorites
+        listitem.addContextMenuItems([(kodiutils.get_string(32010), 'RunScript('+ADDON.getAddonInfo('id') + ',remove,'+ quote(codecs.encode(path, 'UTF-8'))+')')])
+    return listitem
 
 @plugin.route('/add_fav/')
 def add_favorite():
     #data = plugin.args['query'][0].split('***')
     path = unquote(plugin.args['path'][0])
     name = unquote(plugin.args['name'][0])
-    icon = ""
+    log('add favorite: {0}, {1}'.format(path, name))
+    desc = ''
+    icon = ''
+    poster = ''
+    thumbnail = ''
+    fanart = ''
+    if 'desc' in plugin.args:
+        desc = unquote(plugin.args['desc'][0])
     if 'icon' in plugin.args:
         icon = unquote(plugin.args['icon'][0])
-    fanart = ""
+    if 'poster' in plugin.args:
+        poster = unquote(plugin.args['poster'][0])
+    if 'thumbnail' in plugin.args:
+        thumbnail = unquote(plugin.args['thumbnail'][0])
     if 'fanart' in plugin.args:
         fanart = unquote(plugin.args['fanart'][0])
+
     # load favorites
     global favorites
     if not favorites and xbmcvfs.exists(favorites_file_path):
@@ -674,22 +857,20 @@ def add_favorite():
         favorites_file.close()
 
     #favorites.update({data[0] : data[1]})
-    favorites.update({path : {"name" : name, "icon" : icon, "fanart" : fanart}})
+    favorites.update({path : {'name': name, 'desc': desc, 'icon': icon, 'poster': poster, 'thumbnail': thumbnail, 'fanart': fanart}})
     # load favorites
     favorites_file = xbmcvfs.File(favorites_file_path, 'w')
     json.dump(favorites, favorites_file, indent=2)
     favorites_file.close()
 
-    try:
-        kodiutils.notification(kodiutils.get_string(32010), kodiutils.get_string(32011).format(codecs.decode(name, 'utf-8')))
-    except TypeError:
-        kodiutils.notification(kodiutils.get_string(32010), kodiutils.get_string(32011).format(codecs.decode(bytes(name, 'utf-8'), 'utf-8')))
+    kodiutils.notification(kodiutils.get_string(32011), kodiutils.get_string(32012).format(name))
     xbmc.executebuiltin('Container.Refresh')
-    setResolvedUrl(plugin.handle, True, ListItem("none"))
+    setResolvedUrl(plugin.handle, True, ListItem('none'))
 
-@plugin.route('/remove_fav')
+@plugin.route('/remove_fav/')
 def remove_favorite():
     data = unquote(plugin.args['query'][0])
+    log('remove favorite from folder: {0}'.format(data))
     # load favorites
     global favorites
     if not favorites and xbmcvfs.exists(favorites_file_path):
@@ -697,14 +878,16 @@ def remove_favorite():
         favorites = json.load(favorites_file)
         favorites_file.close()
 
-    name = favorites[data]["name"]
-    del favorites[data]
-    # load favorites
-    favorites_file = xbmcvfs.File(favorites_file_path, 'w')
-    json.dump(favorites, favorites_file, indent=2)
-    favorites_file.close()
+    if data in favorites:
+        name = favorites[data]['name']
+        del favorites[data]
+        # load favorites
+        favorites_file = xbmcvfs.File(favorites_file_path, 'w')
+        json.dump(favorites, favorites_file, indent=2)
+        favorites_file.close()
 
-    kodiutils.notification(kodiutils.get_string(32010), kodiutils.get_string(32012).format(name))
+        kodiutils.notification(kodiutils.get_string(32011), kodiutils.get_string(32013).format(name))
+
     xbmc.executebuiltin('Container.Refresh')
     setResolvedUrl(plugin.handle, True, ListItem("none"))
 
@@ -800,32 +983,6 @@ def post_url(url, postdata, headers={}, json = False, critical=False):
     else:
         data = request.read()
     return data.decode('utf-8')
-
-def get_listitem(name="", icon="", fanart="", channel={}):
-    if channel:
-        listitem = ListItem(channel["name"])
-        listitem.setProperty('IsPlayable', 'true')
-        images = json.loads(channel["images_json"])
-        if images:
-            if "image_base" in images and images["image_base"]:
-                listitem.setArt({'icon':images["image_base"], 'thumb':images["image_base"], 'poster':images["image_base"]})
-            else:
-                listitem.setArt({'icon':images["icon_1"], 'thumb':images["icon_1"], 'poster':images["icon_1"]})
-        if "next_program" in channel:
-            #'Title': channel["name"]
-            listitem.setInfo(type='Video', infoLabels={'Title': listitem.getLabel(), 'Plot': channel["next_program"]["name"]+'[CR]'+channel["next_program"]["description"], 'mediatype': 'video'})
-            program_images = json.loads(channel["next_program"]["images_json"])
-            if program_images:
-                listitem.setArt({'fanart' : program_images["image_base"]})
-    else:
-        listitem = ListItem(name)
-        listitem.setProperty('IsPlayable', 'true')
-        listitem.setInfo(type='Video', infoLabels={'mediatype': 'video'})
-        if icon != "":
-            listitem.setArt({'icon':icon, 'thumb':icon, 'poster':icon})
-        if fanart != "":
-            listitem.setArt({'fanart':fanart})
-    return listitem
 
 def run():
     plugin.run()

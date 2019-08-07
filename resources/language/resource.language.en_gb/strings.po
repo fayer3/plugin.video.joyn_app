@@ -42,6 +42,46 @@ msgctxt "#32006"
 msgid "Next"
 msgstr ""
 
+msgctxt "#32007"
+msgid "* My JOYN-Favourites *"
+msgstr ""
+
+msgctxt "#32008"
+msgid "ADDON - Settings"
+msgstr ""
+
+msgctxt "#32009"
+msgid "Add to JOYN-Favorites"
+msgstr ""
+
+msgctxt "#32010"
+msgid "Remove from JOYN-Favorites"
+msgstr ""
+
+msgctxt "#32011"
+msgid "SUCCESSFULL:"
+msgstr ""
+
+msgctxt "#32012"
+msgid "[COLOR green]ADDED[/COLOR] * [COLOR blue]{0}[/COLOR] * [COLOR green]TO FAVORITES ![/COLOR]"
+msgstr ""
+
+msgctxt "#32013"
+msgid "[COLOR red]REMOVED[/COLOR] * [COLOR blue]{0}[/COLOR] * [COLOR red]FROM FAVORITES ![/COLOR]"
+msgstr ""
+
+msgctxt "#32014"
+msgid "Search"
+msgstr ""
+
+msgctxt "#32015"
+msgid "EPG from [COLOR chartreuse]{0}[/COLOR]"
+msgstr ""
+
+msgctxt "#32016"
+msgid "past EPG"
+msgstr ""
+
 msgctxt "#32025"
 msgid "DRM content requires Kodi 18.0"
 msgstr ""
@@ -56,4 +96,8 @@ msgstr ""
 
 msgctxt "#32103"
 msgid "fake ip to bypass geoblocking"
+msgstr ""
+
+msgctxt "#32104"
+msgid "Add the channelname to the livestream title"
 msgstr ""
