@@ -51,12 +51,12 @@ msgid "ADDON - Settings"
 msgstr "ADDON - Einstellungen"
 
 msgctxt "#32009"
-msgid "Add to JOYN-Favorites"
-msgstr "zu JOYN-Favoriten hinzufügen"
+msgid "[COLOR chartreuse]Add to JOYN-Favorites[/COLOR]"
+msgstr "[COLOR chartreuse]zu JOYN-Favoriten hinzufügen[/COLOR]"
 
 msgctxt "#32010"
-msgid "Remove from JOYN-Favorites"
-msgstr "aus JOYN-Favoriten entfernen"
+msgid "[COLOR orange]Remove from JOYN-Favorites[/COLOR]"
+msgstr "[COLOR orange]aus JOYN-Favoriten entfernen[/COLOR]"
 
 msgctxt "#32011"
 msgid "SUCCESSFULL:"
