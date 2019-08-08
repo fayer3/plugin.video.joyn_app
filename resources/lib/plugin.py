@@ -185,16 +185,16 @@ def show_channel_epg_date(channel_id, day, month, year):
 def get_epg_listitem(channeldata, channel_in_label = False, start_in_label = False):
     infoLabels = {}
     art = {}
-    infoLabels.update({'title': channeldata['title'].encode('utf-8') if channeldata['title'] else channeldata['tvShow']['title'].encode('utf-8')})
-    infoLabels.update({'tvShowTitle': channeldata['tvShow']['title'].encode('utf-8')})
+    infoLabels.update({'title': channeldata['title'] if channeldata['title'] else channeldata['tvShow']['title']})
+    infoLabels.update({'tvShowTitle': channeldata['tvShow']['title']})
     infoLabels.update({'year': channeldata['productionYear']})
-    channelname =  channeldata['tvChannelName'].encode('utf-8')
+    channelname =  channeldata['tvChannelName']
 
     local_start_time = datetime.fromtimestamp(channeldata['startTime'])
     local_end_time = datetime.fromtimestamp(channeldata['endTime'])
-    plot = '[COLOR chartreuse]{0} - {1}[/COLOR]'.format(local_start_time.strftime('%H:%M'), local_end_time.strftime('%H:%M'))
-    plot += '[CR][CR]'
-    plot += channeldata['description'].encode('utf-8') if channeldata['description'] else ''
+    plot = u'[COLOR chartreuse]{0} - {1}[/COLOR]'.format(local_start_time.strftime('%H:%M'), local_end_time.strftime('%H:%M'))
+    plot += u'[CR][CR]'
+    plot = plot + channeldata['description'] if channeldata['description'] else u''
     infoLabels.update({'plot': plot})
 
     genres = []
@@ -215,19 +215,19 @@ def get_epg_listitem(channeldata, channel_in_label = False, start_in_label = Fal
 
     infoLabels.update({'mediatype': 'episode'})
 
-    label = ''
+    label = u''
     if channel_in_label:
         if channelname != infoLabels.get('tvShowTitle'):
-            label = infoLabels.get('tvShowTitle') if not infoLabels.get('title') or infoLabels.get('tvShowTitle') == infoLabels.get('title') else '[COLOR blue]{0}[/COLOR]  {1}'.format(infoLabels.get('tvShowTitle'), infoLabels.get('title'))
-            label = '[COLOR lime]{0}[/COLOR]  {1}'.format(channelname, label)
+            label = infoLabels.get('tvShowTitle') if not infoLabels.get('title') or infoLabels.get('tvShowTitle') == infoLabels.get('title') else u'[COLOR blue]{0}[/COLOR]  {1}'.format(infoLabels.get('tvShowTitle'), infoLabels.get('title'))
+            label = u'[COLOR lime]{0}[/COLOR]  {1}'.format(channelname, label)
             if kodiutils.get_setting_as_bool('channel_name_in_stream_title'):
                 infoLabels['title'] = label
         else:
             label = channelname
     else:
-        label = infoLabels.get('tvShowTitle') if not infoLabels.get('title') or infoLabels.get('tvShowTitle') == infoLabels.get('title') else '[COLOR blue]{0}[/COLOR]  {1}'.format(infoLabels.get('tvShowTitle'), infoLabels.get('title'))
+        label = infoLabels.get('tvShowTitle') if not infoLabels.get('title') or infoLabels.get('tvShowTitle') == infoLabels.get('title') else u'[COLOR blue]{0}[/COLOR]  {1}'.format(infoLabels.get('tvShowTitle'), infoLabels.get('title'))
     if start_in_label:
-        label = '[COLOR chartreuse]{0}[/COLOR]: '.format(local_start_time.strftime('%H:%M')) + label
+        label = u'[COLOR chartreuse]{0}[/COLOR]: '.format(local_start_time.strftime('%H:%M')) + label
 
     listitem = ListItem(label)
     listitem.setArt(art)
@@ -248,7 +248,7 @@ def show_fetch(fetch_id, type):
 
 def fetch(fetch_id, query, header):
     url = ids.fetch_url.format(fetch_id)
-    url += '?'
+    url += u'?'
     if query:
         for q in query:
             if q == 'selection':
@@ -336,6 +336,8 @@ def add_tvchannel_from_fetch(content):
             show_channel, channel_id=item['channelId']), listitem, True)
 
 def add_livestreams():
+
+    xbmcplugin.addSortMethod(plugin.handle, xbmcplugin.SORT_METHOD_LABEL)
     dt_utcnow = datetime.utcnow().replace(second=0)
     dt_from = dt_utcnow - timedelta(hours=4)
     dt_to = dt_utcnow + timedelta(hours=10)
@@ -355,7 +357,7 @@ def add_livestreams():
                 if epg_now and epg_next:
                     break
 
-        brand = ''
+        brand = u''
         infoLabels = {}
         art = {}
         if epg_now:
@@ -368,13 +370,13 @@ def add_livestreams():
             local_end_time = datetime.fromtimestamp(epg_now['endTime'])
             plot = '{0} - {1}'.format(local_start_time.strftime('%H:%M'), local_end_time.strftime('%H:%M'))
             if epg_next:
-                next_title = epg_next.get('title').encode('utf-8') if epg_next.get('title') else None
-                next_show = epg_next.get('tvShow').get('title').encode('utf-8') if epg_next.get('tvShow') else ''
+                next_title = epg_next.get('title') if epg_next.get('title') else None
+                next_show = epg_next.get('tvShow').get('title') if epg_next.get('tvShow') else u''
 
-                plot += '[CR]{0}: [COLOR blue]{1}[/COLOR] {2}'.format(kodiutils.get_string(32006), next_show, next_title) if next_title and next_show != '' and next_title != next_show else '[CR]{0}: {1}'.format(kodiutils.get_string(32006),next_title if next_title else next_show)
+                plot += u'[CR]{0}: [COLOR blue]{1}[/COLOR] {2}'.format(kodiutils.get_string(32006), next_show, next_title) if next_title and next_show != u'' and next_title != next_show else u'[CR]{0}: {1}'.format(kodiutils.get_string(32006),next_title if next_title else next_show)
 
-            plot += '[CR][CR]'
-            plot += epg_now['description'].encode('utf-8') if epg_now['description'] else ''
+            plot += u'[CR][CR]'
+            plot += epg_now['description'] if epg_now['description'] else u''
             infoLabels.update({'plot': plot})
 
             genres = []
@@ -382,7 +384,7 @@ def add_livestreams():
                 if genre['title'] not in genres:
                     genres.append(genre['title'])
             if len(genres) > 0:
-                infoLabels.update({'genre': ', '.join(genres)})
+                infoLabels.update({'genre': u', '.join(genres)})
 
             if len(epg_now['images']) > 0:
                 for image in epg_now['images']:
@@ -417,10 +419,10 @@ def add_livestreams():
         else:
             # also use episode, because with 'video' it's not possible to view information
             infoLabels.update({'mediatype': 'episode'})
-        label = ''
+        label = u''
         if brand != infoLabels.get('tvShowTitle'):
-            label = infoLabels.get('tvShowTitle').encode('utf-8') if not infoLabels.get('title') or infoLabels.get('tvShowTitle') == infoLabels.get('title') else '[COLOR blue]{0}[/COLOR]  {1}'.format(infoLabels.get('tvShowTitle').encode('utf-8'), infoLabels.get('title').encode('utf-8'))
-            label = '[COLOR lime]{0}[/COLOR]  {1}'.format(brand.encode('utf-8'), label)
+            label = infoLabels.get('tvShowTitle') if not infoLabels.get('title') or infoLabels.get('tvShowTitle') == infoLabels.get('title') else u'[COLOR blue]{0}[/COLOR]  {1}'.format(infoLabels.get('tvShowTitle'), infoLabels.get('title'))
+            label = u'[COLOR lime]{0}[/COLOR]  {1}'.format(brand, label)
             if kodiutils.get_setting_as_bool('channel_name_in_stream_title'):
                 infoLabels['title'] = label
         else:
@@ -449,12 +451,12 @@ def show_channel(channel_id):
 @plugin.route('/seasons/id=<show_id>/')
 def show_seasons(show_id):
     content_tvshow = json.loads(get_url(ids.tvshow_url.format(show_id), critical = False))
-    icon=''
-    poster = ''
-    fanart = ''
-    thumbnail = ''
-    series_name = ''
-    series_desc = ''
+    icon = u''
+    poster = u''
+    fanart = u''
+    thumbnail = u''
+    series_name = u''
+    series_desc = u''
     if content_tvshow:
         for item in content_tvshow['response']['data']:
             for title in item['metadata']['de']['titles']:
@@ -484,21 +486,21 @@ def show_seasons(show_id):
     content = json.loads(get_url(ids.seasons_url.format(show_id), critical = False))
     if content:
         for item in content['response']['data']:
-            name = ''
-            if 'seasonNumber' in str(item['metadata']['de']) and str(item['metadata']['de']['seasonNumber']) != "":
-                name = 'Staffel '+str(item['metadata']['de']['seasonNumber'])
+            name = u''
+            if 'seasonNumber' in str(item['metadata']['de']) and str(item['metadata']['de']['seasonNumber']) != '':
+                name = u'Staffel {0}'.format(item['metadata']['de']['seasonNumber'])
             else:
                 for title in item['metadata']['de']['titles']:
                     if title['type'] == 'main':
                         name = title['text']
             listitem = ListItem(name)
             # get images
-            icon=''
+            icon = u''
             for image in item['metadata']['de']['images']:
                 if image['type'] == 'PRIMARY':
                     icon = ids.image_url.format(image['url'])
             listitem.setArt({'icon': icon, 'thumb': thumbnail, 'poster': poster, 'fanart': fanart})
-            description = ''
+            description = u''
             for desc in item['metadata']['de']['descriptions']:
                 if desc['type'] == 'main':
                     description = desc['text']
@@ -516,9 +518,9 @@ def show_season(season_id):
     for item in content['response']['data']:
         goDATE = None
         toDATE = None
-        startTIMES = ""
-        endTIMES = ""
-        Note_1 = ""
+        startTIMES = u''
+        endTIMES = u''
+        Note_1 = u''
         if 'visibilities' in item:
             startDATES = datetime.fromtimestamp(int(item['visibilities'][0]['startsAt']))
             startTIMES = startDATES.strftime('%d.%m.%Y - %H:%M')
@@ -527,16 +529,16 @@ def show_season(season_id):
             endTIMES = endDATES.strftime('%d.%m.%Y - %H:%M')
             toDATE =  endDATES.strftime('%d.%m.%Y')
         if startTIMES and endTIMES: Note_1 = kodiutils.get_string(32002).format(startTIMES, endTIMES)
-        name = ''
+        name = u''
         for title in item['metadata']['de']['titles']:
             if title['type'] == 'main':
                 name = title['text']
         listitem = ListItem(name)
         # get images
-        icon=''
-        poster = ''
-        fanart = ''
-        thumbnail = ''
+        icon = u''
+        poster = u''
+        fanart = u''
+        thumbnail = u''
         for image in item['metadata']['de']['images']:
             if image['type'] == 'PRIMARY':
                 thumbnail = ids.image_url.format(image['url'])
@@ -553,7 +555,7 @@ def show_season(season_id):
         if not icon:
             icon = thumbnail
         listitem.setArt({'icon': icon, 'thumb': thumbnail, 'poster': poster, 'fanart': fanart})
-        description = ''
+        description = u''
         for desc in item['metadata']['de']['descriptions']:
             if desc['type'] == 'main':
                 description = desc['text']
@@ -582,6 +584,7 @@ def show_category(category_id):
             listitem = ListItem(favorites[item]['name'])
             listitem.setArt({'icon': favorites[item]['icon'], 'thumb': favorites[item]['thumbnail'], 'poster': favorites[item]['poster'], 'fanart': favorites[item]['fanart']})
             listitem.setInfo('Video', {'plot': favorites[item]['desc']})
+            add_favorites_context_menu(listitem, item, favorites[item]['name'], favorites[item]['desc'], favorites[item]['icon'], favorites[item]['poster'], favorites[item]['thumbnail'], favorites[item]['fanart'])
             addDirectoryItem(plugin.handle, url=item,
                 listitem=listitem, isFolder=True)
     else:
@@ -600,8 +603,8 @@ def show_category(category_id):
                         elif param['in'] == 'header':
                             header.append(param['name'])
                         else:
-                            kodiutils.notification('ERROR', 'new param location ' + param['in'])
-                            log('new param location ' + param['in'])
+                            kodiutils.notification(u'ERROR', u'new param location {0}'.format(param['in']))
+                            log(u'new param location {0}'.format(param['in']))
                             log(json.dumps(param))
                     #fetch(fetch_id=item['fetch']['id'], query=query, header=header)
                     if multiprocess:
@@ -621,8 +624,8 @@ def show_category(category_id):
 @plugin.route('/episode/<episode_id>/')
 def play_episode(episode_id):
     if LooseVersion('18.0') > LooseVersion(xbmc.getInfoLabel('System.BuildVersion')):
-        log("version is: " + xbmc.getInfoLabel('System.BuildVersion'))
-        kodiutils.notification('ERROR', kodiutils.get_string(32025))
+        log(u'version is: {0}'.format(xbmc.getInfoLabel('System.BuildVersion')))
+        kodiutils.notification(u'ERROR', kodiutils.get_string(32025))
         setResolvedUrl(plugin.handle, False, ListItem('none'))
         return
     content = json.loads(get_url(ids.video_info_url.format(episode_id), critical = True))
@@ -633,21 +636,21 @@ def play_episode(episode_id):
     playoutBaseUrl = psf_config['default']['vod']['playoutBaseUrl']
     entitlementBaseUrl = psf_config['default']['vod']['entitlementBaseUrl']
 
-    postdata = '{"access_id":"'+ player_config['accessId']+'","content_id":"'+episode_id+'","content_type":"VOD"}'
+    postdata = u'{{"access_id":"{access_id}","content_id":"{content_id}","content_type":"VOD"}}'.format(access_id = player_config['accessId'], content_id = episode_id)
     if kodiutils.get_setting_as_bool('fake_ip'):
-        entitlement_token_data = json.loads(post_url(entitlementBaseUrl+ids.entitlement_token_url, postdata=postdata, headers={'x-api-key': psf_config['default']['vod']['apiGatewayKey'], 'x-forwarded-for':'53.'+str(random.randint(0,256))+'.'+str(random.randint(0,256))+'.'+str(random.randint(0,256))}, json = True, critical=True))
+        entitlement_token_data = json.loads(post_url(entitlementBaseUrl+ids.entitlement_token_url, postdata=postdata, headers={'x-api-key': psf_config['default']['vod']['apiGatewayKey'], u'x-forwarded-for': u'53.{0}.{1}.{2}'.format(random.randint(0,256), random.randint(0,256), random.randint(0,256))}, json = True, critical=True))
     else:
-        entitlement_token_data = json.loads(post_url(entitlementBaseUrl+ids.entitlement_token_url, postdata=postdata, headers={'x-api-key': psf_config['default']['vod']['apiGatewayKey']}, json = True, critical=True))
+        entitlement_token_data = json.loads(post_url(entitlementBaseUrl+ids.entitlement_token_url, postdata=postdata, headers={u'x-api-key': psf_config['default']['vod']['apiGatewayKey']}, json = True, critical=True))
 
     tracking = content['response']['tracking']
-    genres='["'+'","'.join(tracking['genres'])+'"]'
+    genres = u'["'+u'","'.join(tracking['genres'])+u'"]'
 
     nuggvars = nuggvars_data.replace('{"','').replace(',"url":""}','').replace('":','=').replace(',"','&')
 
     clientData = base64.b64encode((ids.clientdata.format(nuggvars=nuggvars[:-1], episode_id=episode_id, duration=content['response']['video']['duration'], brand=tracking['channel'], genres=genres, tvshow_id=tracking['tvShow']['id'])).encode('utf-8')).decode('utf-8')
-    log('clientData: ' + clientData)
+    log(u'clientData: {0}'.format(clientData))
 
-    sig = episode_id + ',' + entitlement_token_data['entitlement_token'] + ',' + clientData + codecs.encode(ids.xxtea_key.encode('utf-8'),'hex').decode('utf-8')
+    sig = u'{episode_id},{entitlement_token},{clientData}{xxtea_key_hex}'.format(episode_id=episode_id, entitlement_token=entitlement_token_data['entitlement_token'], clientData=clientData, xxtea_key_hex=codecs.encode(ids.xxtea_key.encode('utf-8'),'hex').decode('utf-8'))
     sig = hashlib.sha1(sig.encode('UTF-8')).hexdigest()
 
     video_data_url = playoutBaseUrl+ids.video_playback_url.format(episode_id=episode_id, entitlement_token=entitlement_token_data['entitlement_token'], clientData=clientData, sig=sig)
@@ -655,27 +658,27 @@ def play_episode(episode_id):
     playitem = ListItem()
 
     video_data = json.loads(post_url(video_data_url,postdata='server', critical=True))
-    video_url = ''
+    video_url = u''
     if video_data['vmap']:
-        #got add try again
-        log("stream with add: {0}".format(video_data['videoUrl']))
-        kodiutils.notification('INFO', kodiutils.get_string(32005))
+        #got add, extract mpd
+        log(u'stream with add: {0}'.format(video_data['videoUrl']))
+        kodiutils.notification(u'INFO', kodiutils.get_string(32005))
         video_url = video_data['videoUrl']
         video_url_data = get_url(video_url, critical = True)
         # get base url
         base_urls = re.findall('<BaseURL>(.*?)</BaseURL>',video_url_data)
         if len(base_urls) > 0 and base_urls[0].startswith('http'):
-            video_url = base_urls[0]+'.mpd|User-Agent=vvs-native-android/3.1.0.301003151 (Linux;Android 7.1.1) ExoPlayerLib/2.10.0'
+            video_url = base_urls[0] + u'.mpd|User-Agent=vvs-native-android/3.1.0.301003151 (Linux;Android 7.1.1) ExoPlayerLib/2.10.0'
         else:
-            kodiutils.notification('INFO', kodiutils.get_string(32005))
+            kodiutils.notification(u'INFO', kodiutils.get_string(32005))
             setResolvedUrl(plugin.handle, False, playitem)
             return
     else:
-        video_url = video_data['videoUrl'].rpartition("?")[0]+"|User-Agent=vvs-native-android/3.1.0.301003151 (Linux;Android 7.1.1) ExoPlayerLib/2.10.0"
+        video_url = video_data['videoUrl'].rpartition('?')[0] + u'|User-Agent=vvs-native-android/3.1.0.301003151 (Linux;Android 7.1.1) ExoPlayerLib/2.10.0'
 
     is_helper = None
-    if video_data['drm'] != 'widevine':
-        kodiutils.notification('ERROR', kodiutils.get_string(32004).format(video_data['drm']))
+    if video_data['drm'] != u'widevine':
+        kodiutils.notification(u'ERROR', kodiutils.get_string(32004).format(video_data['drm']))
         return
 
     is_helper = inputstreamhelper.Helper('mpd', drm='com.widevine.alpha')
@@ -694,22 +697,22 @@ def play_episode(episode_id):
     if inputstream_installed and is_helper.check_inputstream():
         playitem.setPath(video_url)
         #playitem.path= = ListItem(label=xbmc.getInfoLabel('Container.ShowTitle'), path=urls["urls"]["dash"][drm_name]["url"]+"|User-Agent=vvs-native-android/1.0.10 (Linux;Android 7.1.1) ExoPlayerLib/2.8.1")
-        log('video url: {0}'.format(video_url))
-        log('licenseUrl: {0}'.format(video_data['licenseUrl']))
+        log(u'video url: {0}'.format(video_url))
+        log(u'licenseUrl: {0}'.format(video_data['licenseUrl']))
         playitem.setProperty('inputstreamaddon', is_helper.inputstream_addon)
         playitem.setProperty('inputstream.adaptive.manifest_type', 'mpd')
         playitem.setProperty('inputstream.adaptive.license_type', 'com.widevine.alpha')
         playitem.setProperty('inputstream.adaptive.license_key', video_data['licenseUrl'] +"|User-Agent=vvs-native-android/3.1.0.301003151 (Linux;Android 7.1.1) ExoPlayerLib/2.10.0&Content-Type=application/octet-stream|R{SSM}|")
         setResolvedUrl(plugin.handle, True, playitem)
     else:
-        kodiutils.notification('ERROR', kodiutils.get_string(32019).format(drm))
+        kodiutils.notification(u'ERROR', kodiutils.get_string(32019).format(drm))
         setResolvedUrl(plugin.handle, False, playitem)
 
 @plugin.route('/live/<stream_id>/<brand>/')
 def play_live(stream_id, brand):
     if LooseVersion('18.0') > LooseVersion(xbmc.getInfoLabel('System.BuildVersion')):
-        log("version is: " + xbmc.getInfoLabel('System.BuildVersion'))
-        kodiutils.notification('ERROR', kodiutils.get_string(32025))
+        log(u'version is: {0}'.format(xbmc.getInfoLabel('System.BuildVersion')))
+        kodiutils.notification(u'ERROR', kodiutils.get_string(32025))
         setResolvedUrl(plugin.handle, False, ListItem('none'))
         return
     player_config_data = json.loads(get_url(ids.player_config_url, cache = True, critical = True))
@@ -718,16 +721,18 @@ def play_live(stream_id, brand):
     playoutBaseUrl = psf_config['default']['live']['playoutBaseUrl']
     entitlementBaseUrl = psf_config['default']['live']['entitlementBaseUrl']
 
-    postdata = '{"access_id":"'+ player_config['accessId']+'","content_id":"'+stream_id+'","content_type":"LIVE"}'
+    postdata = u'{{"access_id":"{accessId}","content_id":"{stream_id}","content_type":"LIVE"}}'.format(accessId=player_config['accessId'], stream_id=stream_id)
+    #'{"access_id":"'+ player_config['accessId']+'","content_id":"'+stream_id+'","content_type":"LIVE"}'
     if kodiutils.get_setting_as_bool('fake_ip'):
-        entitlement_token_data = json.loads(post_url(entitlementBaseUrl+ids.entitlement_token_url, postdata=postdata, headers={'x-api-key': psf_config['default']['live']['apiGatewayKey'], 'x-forwarded-for': '53.'+str(random.randint(0,256))+'.'+str(random.randint(0,256))+'.'+str(random.randint(0,256))}, json = True, critical=True))
+        entitlement_token_data = json.loads(post_url(entitlementBaseUrl+ids.entitlement_token_url, postdata=postdata, headers={'x-api-key': psf_config['default']['live']['apiGatewayKey'], u'x-forwarded-for': u'53.{0}.{1}.{2}'.format(random.randint(0,256), random.randint(0,256), random.randint(0,256))}, json = True, critical=True))
     else:
-        entitlement_token_data = json.loads(post_url(entitlementBaseUrl+ids.entitlement_token_url, postdata=postdata, headers={'x-api-key': psf_config['default']['live']['apiGatewayKey']}, json = True, critical=True))
+        entitlement_token_data = json.loads(post_url(entitlementBaseUrl+ids.entitlement_token_url, postdata=postdata, headers={u'x-api-key': psf_config['default']['live']['apiGatewayKey']}, json = True, critical=True))
 
     clientData = base64.b64encode((ids.clientdata_live.format(stream_id=stream_id, brand=brand)).encode('utf-8')).decode('utf-8')
-    log('clientData: ' + clientData)
+    log(u'clientData: {0}'.format(clientData))
 
-    sig = stream_id + ',' + entitlement_token_data['entitlement_token'] + ',' + clientData + codecs.encode(ids.xxtea_key.encode('utf-8'),'hex').decode('utf-8')
+    sig = u'{stream_id},{entitlement_token},{clientData}{xxtea_key_hex}'.format(stream_id=stream_id, entitlement_token=entitlement_token_data['entitlement_token'], clientData=clientData, xxtea_key_hex=codecs.encode(ids.xxtea_key.encode('utf-8'),'hex').decode('utf-8'))
+    #stream_id + ',' + entitlement_token_data['entitlement_token'] + ',' + clientData + codecs.encode(ids.xxtea_key.encode('utf-8'),'hex').decode('utf-8')
     sig = hashlib.sha1(sig.encode('UTF-8')).hexdigest()
 
     video_data_url = playoutBaseUrl+ids.live_playback_url.format(stream_id=stream_id, entitlement_token=entitlement_token_data['entitlement_token'], clientData=clientData, sig=sig)
@@ -737,9 +742,11 @@ def play_live(stream_id, brand):
     video_data = json.loads(post_url(video_data_url, postdata='server', critical=True))
     if video_data['vmap']:
         #got add try again
+        log(u'livestream with add: {0}'.format(video_data['videoUrl']))
         video_data = json.loads(post_url(video_data_url, postdata='server', critical=True))
     if video_data['vmap']:
-        kodiutils.notification('INFO', kodiutils.get_string(32005))
+        log(u'livestream with add: {0}'.format(video_data['videoUrl']))
+        kodiutils.notification(u'INFO', kodiutils.get_string(32005))
         setResolvedUrl(plugin.handle, False, playitem)
         return
 
@@ -751,10 +758,10 @@ def play_live(stream_id, brand):
     video_url_data = get_url(video_url, critical = True)
 
     # check base urls
-    base_urls = re.findall('<BaseURL>(.*?)</BaseURL>',video_url_data)
+    base_urls = re.findall('<BaseURL>(.*?)</BaseURL>', video_url_data)
     if len(base_urls) > 1:
         if base_urls[0].startswith('http'):
-            video_url = base_urls[0]+base_urls[1]+'cenc-default.mpd'
+            video_url = base_urls[0] + base_urls[1] + u'cenc-default.mpd'
 
     is_helper = inputstreamhelper.Helper('mpd', drm='com.widevine.alpha')
     if not is_helper:
@@ -770,16 +777,16 @@ def play_live(stream_id, brand):
         inputstream_installed = is_helper._has_inputstream()
 
     if inputstream_installed and is_helper.check_inputstream():
-        playitem.setPath(video_url+"|User-Agent=vvs-native-android/3.1.0.301003151 (Linux;Android 7.1.1) ExoPlayerLib/2.10.0")
+        playitem.setPath(video_url + u'|User-Agent=vvs-native-android/3.1.0.301003151 (Linux;Android 7.1.1) ExoPlayerLib/2.10.0')
         #playitem.path= = ListItem(label=xbmc.getInfoLabel('Container.ShowTitle'), path=urls["urls"]["dash"][drm_name]["url"]+"|User-Agent=vvs-native-android/1.0.10 (Linux;Android 7.1.1) ExoPlayerLib/2.8.1")
         playitem.setProperty('inputstreamaddon', is_helper.inputstream_addon)
         playitem.setProperty('inputstream.adaptive.manifest_type', 'mpd')
         playitem.setProperty('inputstream.adaptive.license_type', 'com.widevine.alpha')
         playitem.setProperty("inputstream.adaptive.manifest_update_parameter", 'full')
-        playitem.setProperty('inputstream.adaptive.license_key', video_data['licenseUrl'] + '|User-Agent=vvs-native-android/3.1.0.301003151 (Linux;Android 7.1.1) ExoPlayerLib/2.10.0|R{SSM}|')
+        playitem.setProperty('inputstream.adaptive.license_key', video_data['licenseUrl'] + u'|User-Agent=vvs-native-android/3.1.0.301003151 (Linux;Android 7.1.1) ExoPlayerLib/2.10.0|R{SSM}|')
         setResolvedUrl(plugin.handle, True, playitem)
     else:
-        kodiutils.notification('ERROR', kodiutils.get_string(32019).format(drm))
+        kodiutils.notification(u'ERROR', kodiutils.get_string(32019).format(drm))
         setResolvedUrl(plugin.handle, False, playitem)
 
 def utc_to_local(dt):
@@ -832,12 +839,11 @@ def add_favorite():
     #data = plugin.args['query'][0].split('***')
     path = unquote(plugin.args['path'][0])
     name = unquote(plugin.args['name'][0])
-    log('add favorite: {0}, {1}'.format(path, name))
-    desc = ''
-    icon = ''
-    poster = ''
-    thumbnail = ''
-    fanart = ''
+    desc = u''
+    icon = u''
+    poster = u''
+    thumbnail = u''
+    fanart = u''
     if 'desc' in plugin.args:
         desc = unquote(plugin.args['desc'][0])
     if 'icon' in plugin.args:
@@ -848,6 +854,18 @@ def add_favorite():
         thumbnail = unquote(plugin.args['thumbnail'][0])
     if 'fanart' in plugin.args:
         fanart = unquote(plugin.args['fanart'][0])
+
+    if sys.version_info[0] < 3:
+        # decode utf-8
+        path = path.decode('utf-8')
+        name = name.decode('utf-8')
+        desc = desc.decode('utf-8')
+        icon = icon.decode('utf-8')
+        poster = poster.decode('utf-8')
+        thumbnail = thumbnail.decode('utf-8')
+        fanart = fanart.decode('utf-8')
+
+    log(u'add favorite: {0}, {1}'.format(path, name))
 
     # load favorites
     global favorites
@@ -863,14 +881,20 @@ def add_favorite():
     json.dump(favorites, favorites_file, indent=2)
     favorites_file.close()
 
+    # try:
     kodiutils.notification(kodiutils.get_string(32011), kodiutils.get_string(32012).format(name))
+    # except UnicodeDecodeError:
+    #     kodiutils.notification(kodiutils.get_string(32011), kodiutils.get_string(32012).format(name.decode('utf-8')))
     xbmc.executebuiltin('Container.Refresh')
     setResolvedUrl(plugin.handle, True, ListItem('none'))
 
 @plugin.route('/remove_fav/')
 def remove_favorite():
-    data = unquote(plugin.args['query'][0])
-    log('remove favorite from folder: {0}'.format(data))
+    data = unquote(plugin.args['query'][0]).encode('utf-8').decode('utf-8')
+    if sys.version_info[0] < 3:
+        # decode utf-8
+        data = data.decode('utf-8')
+    log(u'remove favorite from folder: {0}'.format(data))
     # load favorites
     global favorites
     if not favorites and xbmcvfs.exists(favorites_file_path):
@@ -892,12 +916,12 @@ def remove_favorite():
     setResolvedUrl(plugin.handle, True, ListItem("none"))
 
 def get_url(url, headers={}, cache=False, critical=False):
-    log(url)
+    log(u'get: {0}'.format(url))
     new_headers = {}
     new_headers.update(headers)
     if cache == True:
-        new_headers.update({"If-Modified-Since": ids.get_config_tag(url)})
-    new_headers.update({"User-Agent": ids.user_agent, "Accept-Encoding":"gzip", 'key': ids.middleware_token})
+        new_headers.update({'If-Modified-Since': ids.get_config_tag(url)})
+    new_headers.update({'User-Agent': ids.user_agent, 'Accept-Encoding': 'gzip', 'key': ids.middleware_token})
     try:
         request = urlopen(Request(url, headers=new_headers))
     except HTTPError as e:
@@ -905,11 +929,11 @@ def get_url(url, headers={}, cache=False, critical=False):
             return ids.get_config_cache(url)
         failure = str(e)
         if hasattr(e, 'code'):
-            log("(getUrl) ERROR - ERROR - ERROR : ########## {0} === {1} ##########".format(url, failure))
+            log(u'(getUrl) ERROR - ERROR - ERROR : ########## {0} === {1} ##########'.format(url, failure))
         elif hasattr(e, 'reason'):
-            log("(getUrl) ERROR - ERROR - ERROR : ########## {0} === {1} ##########".format(url, failure))
+            log(u'(getUrl) ERROR - ERROR - ERROR : ########## {0} === {1} ##########'.format(url, failure))
         try:
-            data = ''
+            data = u''
             if e.info().get('Content-Encoding') == 'gzip':
                 # decompress content
                 buffer = StringIO(e.read())
@@ -917,15 +941,15 @@ def get_url(url, headers={}, cache=False, critical=False):
                 data = deflatedContent.read()
             else:
                 data = e.read()
-            log('Error: ' + data.decode('utf-8'))
+            log(u'Error: ' + data.decode('utf-8'))
         except:
-            log('couldn\'t read Error content')
+            log(u'couldn\'t read Error content')
             pass
         if critical:
-            kodiutils.notification("ERROR GETTING URL", failure)
+            kodiutils.notification('ERROR GETTING URL', failure)
             return sys.exit(0)
         else:
-            return ""
+            return u''
 
     if request.info().get('Content-Encoding') == 'gzip':
         # decompress content
@@ -934,13 +958,13 @@ def get_url(url, headers={}, cache=False, critical=False):
         data = deflatedContent.read()
     else:
         data = request.read()
-
+    data = data.decode('utf-8')
     if cache:
         ids.set_config_cache(url, data, request.info().get('Last-Modified'))
-    return data.decode('utf-8')
+    return data
 
 def post_url(url, postdata, headers={}, json = False, critical=False):
-    log(url + str(headers))
+    log(u'post: {0}, {1}'.format(url, headers))
     new_headers = {}
     new_headers.update(headers)
     if json:
@@ -950,11 +974,11 @@ def post_url(url, postdata, headers={}, json = False, critical=False):
     except HTTPError as e:
         failure = str(e)
         if hasattr(e, 'code'):
-            log("(getUrl) ERROR - ERROR - ERROR : ########## {0} === {1} === {2} ##########".format(url, postdata, failure))
+            log(u'(getUrl) ERROR - ERROR - ERROR : ########## {0} === {1} === {2} ##########'.format(url, postdata, failure))
         elif hasattr(e, 'reason'):
-            log("(getUrl) ERROR - ERROR - ERROR : ########## {0} === {1} === {2} ##########".format(url, postdata, failure))
+            log(u'(getUrl) ERROR - ERROR - ERROR : ########## {0} === {1} === {2} ##########'.format(url, postdata, failure))
         try:
-            data = ''
+            data = u''
             if e.info().get('Content-Encoding') == 'gzip':
                 # decompress content
                 buffer = StringIO(e.read())
@@ -962,18 +986,18 @@ def post_url(url, postdata, headers={}, json = False, critical=False):
                 data = deflatedContent.read()
             else:
                 data = e.read()
-            log('Error: ' + data.decode('utf-8'))
+            log(u'Error: {0}'.format(data.decode('utf-8')))
         except:
-            log('couldn\'t read Error content')
+            log(u'couldn\'t read Error content')
             pass
         if critical:
             if hasattr(e, 'code') and getattr(e, 'code') == 422:
-                kodiutils.notification("ERROR GETTING URL", kodiutils.get_string(32003))
+                kodiutils.notification(u'ERROR GETTING URL', kodiutils.get_string(32003))
             else:
-                kodiutils.notification("ERROR GETTING URL", failure)
+                kodiutils.notification(u'ERROR GETTING URL', failure)
             return sys.exit(0)
         else:
-            return ""
+            return u''
 
     if request.info().get('Content-Encoding') == 'gzip':
         # decompress content
@@ -988,5 +1012,9 @@ def run():
     plugin.run()
 
 def log(info):
-    if kodiutils.get_setting_as_bool("debug"):
-        logger.warning(info)
+    if kodiutils.get_setting_as_bool('debug'):
+        try:
+            logger.warning(info)
+        except UnicodeDecodeError:
+            logger.warning(u'UnicodeDecodeError on logging')
+            logger.warning(info.decode('utf-8'))

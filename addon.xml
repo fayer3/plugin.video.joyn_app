@@ -24,10 +24,10 @@
         <email>fb4472 (at) aon.at</email>
         <source>https://github.com/fayer3/plugin.video.zappntv</source>
         <news>- EPG hinzugefügt
-        - JOYN Favoriten hinzugefügt
-        - Suche hinzugefügt
-        - Name von TV shows korregiert
-        - VOD auf lebreelec korregiert
+- JOYN Favoriten hinzugefügt
+- Suche hinzugefügt
+- Name von TV shows korregiert
+- VOD auf lebreelec korregiert
         </news>
         <assets>
             <icon>resources/icon.png</icon>
