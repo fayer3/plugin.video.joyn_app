@@ -450,14 +450,16 @@ def show_channel(channel_id):
 
 @plugin.route('/seasons/id=<show_id>/')
 def show_seasons(show_id):
-    content_tvshow = json.loads(get_url(ids.tvshow_url.format(show_id), critical = False))
+
     icon = u''
     poster = u''
     fanart = u''
     thumbnail = u''
     series_name = u''
     series_desc = u''
-    if content_tvshow:
+    content_tvshow_data = get_url(ids.tvshow_url.format(show_id), critical = False)
+    if content_tvshow_data:
+        content_tvshow = json.loads(content_tvshow_data)
         for item in content_tvshow['response']['data']:
             for title in item['metadata']['de']['titles']:
                 if title['type'] == 'main':
@@ -483,8 +485,9 @@ def show_seasons(show_id):
             poster = thumbnail
         if not fanart:
             fanart = thumbnail
-    content = json.loads(get_url(ids.seasons_url.format(show_id), critical = False))
-    if content:
+    content_data = get_url(ids.seasons_url.format(show_id), critical = False)
+    if content_data:
+        content = json.loads(content_data)
         for item in content['response']['data']:
             name = u''
             if 'seasonNumber' in str(item['metadata']['de']) and str(item['metadata']['de']['seasonNumber']) != '':

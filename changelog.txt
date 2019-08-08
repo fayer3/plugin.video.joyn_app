@@ -10,3 +10,5 @@ v0.2.0
 - added search
 - fix name of some TV shows
 - fix VOD on lebreelec
+v0.2.1
+- fix Favorites for not available TV shows
