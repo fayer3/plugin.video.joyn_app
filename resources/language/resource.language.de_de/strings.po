@@ -97,3 +97,15 @@ msgstr "fälsche IP um Geoblocking zu umgehen"
 msgctxt "#32104"
 msgid "Add the channelname to the livestream title"
 msgstr "Füge den Sendernamen zum Livestream Titel hinzu"
+
+msgctxt "#32105"
+msgid "Settings for Live TV"
+msgstr "Einstellungen für Live TV"
+
+msgctxt "#32106"
+msgid "Show a previev of the current show instead of the channel icon."
+msgstr "Zeige eine Vorschau der aktuellen Sendung statt dem Senderlogo"
+
+msgctxt "#32107"
+msgid "Show the name of the currently playing broadcast in the channel Name."
+msgstr "Zeige den Namen der Aktuellen Sendung im Sender namen."

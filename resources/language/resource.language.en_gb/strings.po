@@ -101,3 +101,15 @@ msgstr ""
 msgctxt "#32104"
 msgid "Add the channelname to the livestream title"
 msgstr ""
+
+msgctxt "#32105"
+msgid "Settings for Live TV"
+msgstr ""
+
+msgctxt "#32106"
+msgid "Show a previev of the current show instead of the channel icon."
+msgstr ""
+
+msgctxt "#32107"
+msgid "Show the name of the currently playing broadcast in the channel Name."
+msgstr ""

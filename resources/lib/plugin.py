@@ -9,7 +9,7 @@ import xbmc
 import xbmcplugin
 
 from xbmcgui import ListItem
-from xbmcplugin import addDirectoryItem, endOfDirectory, setResolvedUrl, setContent
+from xbmcplugin import addDirectoryItem, addDirectoryItems, endOfDirectory, setResolvedUrl, setContent
 
 from resources.lib import kodiutils
 from resources.lib import kodilogging
@@ -337,7 +337,7 @@ def add_tvchannel_from_fetch(content):
 
 def add_livestreams():
 
-    xbmcplugin.addSortMethod(plugin.handle, xbmcplugin.SORT_METHOD_LABEL)
+    livestreams = []
     dt_utcnow = datetime.utcnow().replace(second=0)
     dt_from = dt_utcnow - timedelta(hours=4)
     dt_to = dt_utcnow + timedelta(hours=10)
@@ -386,17 +386,16 @@ def add_livestreams():
             if len(genres) > 0:
                 infoLabels.update({'genre': u', '.join(genres)})
 
-            if len(epg_now['images']) > 0:
+            for image in item['metadata']['de']['images']:
+                if image['type'] == 'BRAND_LOGO':
+                    icon = ids.image_url.format(image['url'])
+                    art.update({'icon': icon, 'thumb': icon})
+            if len(epg_now['images']) > 0 and kodiutils.get_setting_as_bool('live_preview_for_icon'):
                 for image in epg_now['images']:
                     if image['subType'] == 'art_direction':
                         art.update({'fanart': ids.image_url.format(image['url'])})
                     elif image['subType'] == 'cover':
                         art.update({'thumb': ids.image_url.format(image['url'])})
-            else:
-                for image in item['metadata']['de']['images']:
-                    if image['type'] == 'BRAND_LOGO':
-                        icon = ids.image_url.format(image['url'])
-                        art.update({'icon': icon, 'thumb': icon, 'poster': icon})
         else:
             for title in item['metadata']['de']['titles']:
                 if title['type'] == 'main':
@@ -423,18 +422,28 @@ def add_livestreams():
         if brand != infoLabels.get('tvShowTitle'):
             label = infoLabels.get('tvShowTitle') if not infoLabels.get('title') or infoLabels.get('tvShowTitle') == infoLabels.get('title') else u'[COLOR blue]{0}[/COLOR]  {1}'.format(infoLabels.get('tvShowTitle'), infoLabels.get('title'))
             label = u'[COLOR lime]{0}[/COLOR]  {1}'.format(brand, label)
-            if kodiutils.get_setting_as_bool('channel_name_in_stream_title'):
+            if kodiutils.get_setting_as_bool('channel_name_in_stream_title') and kodiutils.get_setting_as_bool('live_show_in_label'):
                 infoLabels['title'] = label
         else:
             label = brand
+
+        if not kodiutils.get_setting_as_bool('live_show_in_label'):
+            label = brand
+            infoLabels.update({'plot': u'{0}[CR]{1}'.format(infoLabels.get('tvShowTitle') if not infoLabels.get('title') or infoLabels.get('tvShowTitle') == infoLabels.get('title') else u'[COLOR blue]{0}[/COLOR]  {1}'.format(infoLabels.get('tvShowTitle'), infoLabels.get('title')), infoLabels.get('plot'))})
+            if kodiutils.get_setting_as_bool('channel_name_in_stream_title'):
+                infoLabels['title'] = u'[COLOR lime]{0}[/COLOR]  {1}'.format(brand, infoLabels.get('plot'))
 
         listitem = ListItem(label)
         listitem.setArt(art)
         listitem.setProperty('IsPlayable', 'true')
         listitem.setInfo(type='Video', infoLabels=infoLabels)
         if len(item['metadata']['de']['livestreams']) > 0:
-            addDirectoryItem(plugin.handle,plugin.url_for(
-                play_live, stream_id=item['metadata']['de']['livestreams'][0]['streamId'], brand=brand.encode('utf-8')), listitem)
+            livestreams.append((plugin.url_for(
+                play_live, stream_id=item['metadata']['de']['livestreams'][0]['streamId'], brand=quote(brand.encode('ascii', 'xmlcharrefreplace'))), listitem))
+
+    livestreams.sort(key=lambda x: x[1].getLabel().lower(), reverse=False)
+
+    addDirectoryItems(plugin.handle, livestreams)
 
 
 @plugin.route('/channel/id=<channel_id>/')
@@ -723,6 +732,10 @@ def play_live(stream_id, brand):
     psf_config = json.loads(get_url(ids.psf_config_url, critical = True))
     playoutBaseUrl = psf_config['default']['live']['playoutBaseUrl']
     entitlementBaseUrl = psf_config['default']['live']['entitlementBaseUrl']
+    brand = html_parser.unescape(unquote(brand))
+    #if sys.version_info[0] < 3:
+    #    # decode utf-8
+    #    brand = brand.decode('utf-8')
 
     postdata = u'{{"access_id":"{accessId}","content_id":"{stream_id}","content_type":"LIVE"}}'.format(accessId=player_config['accessId'], stream_id=stream_id)
     #'{"access_id":"'+ player_config['accessId']+'","content_id":"'+stream_id+'","content_type":"LIVE"}'

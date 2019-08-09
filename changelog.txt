@@ -12,3 +12,8 @@ v0.2.0
 - fix VOD on lebreelec
 v0.2.1
 - fix Favorites for not available TV shows
+v0.2.2:
+- fix livestreams of channels with umlaut
+- fix listing of livestreams
+- add option for showing preview image instead of logo of livestreams
+- add option for showing show details in label of livestreams
