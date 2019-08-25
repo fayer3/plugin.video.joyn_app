@@ -17,3 +17,5 @@ v0.2.2:
 - fix listing of livestreams
 - add option for showing preview image instead of logo of livestreams
 - add option for showing show details in label of livestreams
+v0.2.3
+- remove wrong error message

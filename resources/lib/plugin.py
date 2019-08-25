@@ -674,7 +674,6 @@ def play_episode(episode_id):
     if video_data['vmap']:
         #got add, extract mpd
         log(u'stream with add: {0}'.format(video_data['videoUrl']))
-        kodiutils.notification(u'INFO', kodiutils.get_string(32005))
         video_url = video_data['videoUrl']
         video_url_data = get_url(video_url, critical = True)
         # get base url
