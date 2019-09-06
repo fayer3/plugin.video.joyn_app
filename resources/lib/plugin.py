@@ -119,7 +119,7 @@ def index():
         open_settings), ListItem(kodiutils.get_string(32008)))
     endOfDirectory(plugin.handle)
 
-@plugin.route('/search/')
+@plugin.route('/search')
 def search():
     query = query = xbmcgui.Dialog().input(kodiutils.get_string(32014))
     if query != '':
@@ -130,7 +130,7 @@ def search():
         add_series_from_fetch(content)
     endOfDirectory(plugin.handle)
 
-@plugin.route('/epg/')
+@plugin.route('/epg')
 def show_epg():
     content = json.loads(get_url(ids.epg_now_url, critical = True))
     xbmcplugin.addSortMethod(plugin.handle, xbmcplugin.SORT_METHOD_LABEL)
@@ -141,7 +141,7 @@ def show_epg():
             show_channel_epg, channel_id=channel['channelId']), listitem, True)
     endOfDirectory(plugin.handle)
 
-@plugin.route('/epg/id=<channel_id>/')
+@plugin.route('/epg/id=<channel_id>')
 def show_channel_epg(channel_id):
     addDirectoryItem(plugin.handle,plugin.url_for(
         show_channel_epg_past, channel_id=channel_id), ListItem(kodiutils.get_string(32016)), True)
@@ -157,7 +157,7 @@ def show_channel_epg(channel_id):
 
     endOfDirectory(plugin.handle)
 
-@plugin.route('/epg/id=<channel_id>/past/')
+@plugin.route('/epg/id=<channel_id>/past')
 def show_channel_epg_past(channel_id):
     dt_utcnow = datetime.utcnow().date()
     content = json.loads(get_url(ids.epg_channel_url.format(channel = channel_id)+'&to='+quote(dt_utcnow.strftime('%Y-%m-%d %H:%M:%S')), critical = True))
@@ -170,7 +170,7 @@ def show_channel_epg_past(channel_id):
                 show_channel_epg_date, channel_id=channel_id, day=cur_date.day, month=cur_date.month, year=cur_date.year), ListItem(kodiutils.get_string(32015).format(cur_date.strftime('%Y-%m-%d'))), True)
     endOfDirectory(plugin.handle)
 
-@plugin.route('/epg/id=<channel_id>/day=<day>/month=<month>/year=<year>/')
+@plugin.route('/epg/id=<channel_id>/day=<day>/month=<month>/year=<year>')
 def show_channel_epg_date(channel_id, day, month, year):
     log('EPG for channel "{0}" and date "{1}.{2}.{3}"'.format(channel_id, day, month, year))
 
@@ -234,11 +234,11 @@ def get_epg_listitem(channeldata, channel_in_label = False, start_in_label = Fal
     listitem.setInfo(type='Video', infoLabels=infoLabels)
     return listitem
 
-@plugin.route('/info/')
+@plugin.route('/info')
 def show_info():
     xbmc.executebuiltin('Action(Info)')
 
-@plugin.route('/fetch/id=<fetch_id>/type=<type>/')
+@plugin.route('/fetch/id=<fetch_id>/type=<type>')
 def show_fetch(fetch_id, type):
     query = json.loads(unquote(plugin.args['query'][0]))
     header = json.loads(unquote(plugin.args['header'][0]))
@@ -446,7 +446,7 @@ def add_livestreams():
     addDirectoryItems(plugin.handle, livestreams)
 
 
-@plugin.route('/channel/id=<channel_id>/')
+@plugin.route('/channel/id=<channel_id>')
 def show_channel(channel_id):
     current = 0
     content = json.loads(get_url(ids.channel_url.format(current, channel_id), critical=True))
@@ -457,7 +457,7 @@ def show_channel(channel_id):
         add_series_from_fetch(content)
     endOfDirectory(plugin.handle)
 
-@plugin.route('/seasons/id=<show_id>/')
+@plugin.route('/seasons/id=<show_id>')
 def show_seasons(show_id):
 
     icon = u''
@@ -523,7 +523,7 @@ def show_seasons(show_id):
         series_name, series_desc, icon, poster, thumbnail, fanart)
     endOfDirectory(plugin.handle)
 
-@plugin.route('/season/id=<season_id>/')
+@plugin.route('/season/id=<season_id>')
 def show_season(season_id):
     setContent(plugin.handle, 'tvshows')
     content = json.loads(get_url(ids.season_url.format(season_id), critical = True))
@@ -633,7 +633,7 @@ def show_category(category_id):
                         pool.join()
     endOfDirectory(plugin.handle)
 
-@plugin.route('/episode/<episode_id>/')
+@plugin.route('/episode/<episode_id>')
 def play_episode(episode_id):
     if LooseVersion('18.0') > LooseVersion(xbmc.getInfoLabel('System.BuildVersion')):
         log(u'version is: {0}'.format(xbmc.getInfoLabel('System.BuildVersion')))
@@ -719,7 +719,7 @@ def play_episode(episode_id):
         kodiutils.notification(u'ERROR', kodiutils.get_string(32019).format(drm))
         setResolvedUrl(plugin.handle, False, playitem)
 
-@plugin.route('/live/<stream_id>/<brand>/')
+@plugin.route('/live/<stream_id>/<brand>')
 def play_live(stream_id, brand):
     if LooseVersion('18.0') > LooseVersion(xbmc.getInfoLabel('System.BuildVersion')):
         log(u'version is: {0}'.format(xbmc.getInfoLabel('System.BuildVersion')))
@@ -849,27 +849,45 @@ def add_favorites_context_menu(listitem, path, name, desc, icon, poster, thumbna
         listitem.addContextMenuItems([(kodiutils.get_string(32010), 'RunScript('+ADDON.getAddonInfo('id') + ',remove,'+ quote(codecs.encode(path, 'UTF-8'))+')')])
     return listitem
 
-@plugin.route('/add_fav/')
+@plugin.route('/add_fav')
 def add_favorite():
     #data = plugin.args['query'][0].split('***')
-    path = unquote(plugin.args['path'][0])
-    name = unquote(plugin.args['name'][0])
-    desc = u''
-    icon = u''
-    poster = u''
-    thumbnail = u''
-    fanart = u''
+    path = plugin.args['path'][0]
+    name = plugin.args['name'][0]
+    desc = ''
+    icon = ''
+    poster = ''
+    thumbnail = ''
+    fanart = ''
     if 'desc' in plugin.args:
-        desc = unquote(plugin.args['desc'][0])
+        desc = plugin.args['desc'][0]
     if 'icon' in plugin.args:
-        icon = unquote(plugin.args['icon'][0])
+        icon = plugin.args['icon'][0]
     if 'poster' in plugin.args:
-        poster = unquote(plugin.args['poster'][0])
+        poster = plugin.args['poster'][0]
     if 'thumbnail' in plugin.args:
-        thumbnail = unquote(plugin.args['thumbnail'][0])
+        thumbnail = plugin.args['thumbnail'][0]
     if 'fanart' in plugin.args:
-        fanart = unquote(plugin.args['fanart'][0])
-
+        fanart = plugin.args['fanart'][0]
+    
+    if sys.version_info[0] < 3:
+        # decode utf-8
+        path = path.encode('ascii')
+        name = name.encode('ascii')
+        desc = desc.encode('ascii')
+        icon = icon.encode('ascii')
+        poster = poster.encode('ascii')
+        thumbnail = thumbnail.encode('ascii')
+        fanart = fanart.encode('ascii')
+    
+    path = unquote(path)
+    name = unquote(name)
+    desc = unquote(desc)
+    icon = unquote(icon)
+    poster = unquote(poster)
+    thumbnail = unquote(thumbnail)
+    fanart = unquote(fanart)
+    
     if sys.version_info[0] < 3:
         # decode utf-8
         path = path.decode('utf-8')
@@ -903,7 +921,7 @@ def add_favorite():
     xbmc.executebuiltin('Container.Refresh')
     setResolvedUrl(plugin.handle, True, ListItem('none'))
 
-@plugin.route('/remove_fav/')
+@plugin.route('/remove_fav')
 def remove_favorite():
     data = unquote(plugin.args['query'][0]).encode('utf-8').decode('utf-8')
     if sys.version_info[0] < 3:

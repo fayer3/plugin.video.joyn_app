@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<addon id="plugin.video.joyn_app" name="Joyn" version="0.2.3" provider-name="fayer3">
+<addon id="plugin.video.joyn_app" name="Joyn" version="0.2.4" provider-name="fayer3">
     <requires>
         <import addon="xbmc.python" version="2.25.0"/>
         <import addon="script.module.routing" version="0.2.0"/>
@@ -37,6 +37,8 @@
 
 - 0.2.3:
 - enferne falsche Fehlermeldung
+- 0.2.4:
+- pfade für neue plugin routing addon angepasst, einige alte Favoriten könnten nicht funktionieren, diese müssen neu hinzugefürt werden
         </news>
         <assets>
             <icon>resources/icon.png</icon>
