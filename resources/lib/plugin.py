@@ -545,6 +545,14 @@ def show_season(season_id):
         for title in item['metadata']['de']['titles']:
             if title['type'] == 'main':
                 name = title['text']
+        if kodiutils.get_setting_as_bool('number_in_name'):
+            season = ''
+            episode = ''
+            if 'seasonNumber' in item['metadata']['de'] and item['metadata']['de']['seasonNumber'] != None:
+                season = 'Staffel {0} '.format(item['metadata']['de']['seasonNumber'])
+            if 'episodeNumber' in item['metadata']['de'] and item['metadata']['de']['episodeNumber'] != None:
+                episode = 'Episode {0} '.format(item['metadata']['de']['episodeNumber'])
+            name = u'{0}{1}{2}'.format(season, episode, name)
         listitem = ListItem(name)
         # get images
         icon = u''
@@ -671,7 +679,7 @@ def play_episode(episode_id):
 
     video_data = json.loads(post_url(video_data_url,postdata='server', critical=True))
     video_url = u''
-    if video_data['vmap']:
+    if 'vmap'in video_data and video_data['vmap']:
         #got add, extract mpd
         log(u'stream with add: {0}'.format(video_data['videoUrl']))
         video_url = video_data['videoUrl']
@@ -720,7 +728,7 @@ def play_episode(episode_id):
         setResolvedUrl(plugin.handle, False, playitem)
 
 @plugin.route('/live/<stream_id>/<brand>')
-def play_live(stream_id, brand):
+def play_live(stream_id, brand, _try=1):
     if LooseVersion('18.0') > LooseVersion(xbmc.getInfoLabel('System.BuildVersion')):
         log(u'version is: {0}'.format(xbmc.getInfoLabel('System.BuildVersion')))
         kodiutils.notification(u'ERROR', kodiutils.get_string(32025))
@@ -755,28 +763,36 @@ def play_live(stream_id, brand):
     playitem = ListItem()
 
     video_data = json.loads(post_url(video_data_url, postdata='server', critical=True))
-    if video_data['vmap']:
-        #got add try again
-        log(u'livestream with add: {0}'.format(video_data['videoUrl']))
-        video_data = json.loads(post_url(video_data_url, postdata='server', critical=True))
-    if video_data['vmap']:
-        log(u'livestream with add: {0}'.format(video_data['videoUrl']))
-        kodiutils.notification(u'INFO', kodiutils.get_string(32005))
-        setResolvedUrl(plugin.handle, False, playitem)
-        return
 
     is_helper = None
     if video_data['drm'] != 'widevine':
         kodiutils.notification('ERROR', kodiutils.get_string(32004).format(video_data['drm']))
         return
+    
     video_url = video_data['videoUrl']
-    video_url_data = get_url(video_url, critical = True)
-
+    video_url_data = u''
+    if 'vmap'in video_data and video_data['vmap']:
+        #got add, extract mpd
+        log(u'stream with add: {0}'.format(video_url))
+        #return
+        video_url_data = get_url(video_url, headers={'User-Agent': 'vvs-native-android/3.1.0.301003151 (Linux;Android 7.1.1) ExoPlayerLib/2.10.0'}, key = False, critical = True)
+        if 'BaseURL' not in video_url_data and _try < kodiutils.get_setting_as_int('ad_tries'):
+            play_live(stream_id, brand, _try+1)
+            return
+        if 'BaseURL' not in video_url_data:
+            kodiutils.notification(u'ERROR', kodiutils.get_string(32005))
+            setResolvedUrl(plugin.handle, False, ListItem('none'))
+            return
+    else:
+        video_url_data = get_url(video_url, critical = True)
+    
     # check base urls
     base_urls = re.findall('<BaseURL>(.*?)</BaseURL>', video_url_data)
     if len(base_urls) > 1:
         if base_urls[0].startswith('http'):
             video_url = base_urls[0] + base_urls[1] + u'cenc-default.mpd'
+
+    log(u'video stream URL: {0}'.format(video_url))
 
     is_helper = inputstreamhelper.Helper('mpd', drm='com.widevine.alpha')
     if not is_helper:
@@ -948,13 +964,15 @@ def remove_favorite():
     xbmc.executebuiltin('Container.Refresh')
     setResolvedUrl(plugin.handle, True, ListItem("none"))
 
-def get_url(url, headers={}, cache=False, critical=False):
+def get_url(url, headers={}, key=True, cache=False, critical=False):
     log(u'get: {0}'.format(url))
     new_headers = {}
+    new_headers.update({'User-Agent': ids.user_agent, 'Accept-Encoding': 'gzip'})
+    if key:
+        new_headers.update({'key': ids.middleware_token})
     new_headers.update(headers)
     if cache == True:
         new_headers.update({'If-Modified-Since': ids.get_config_tag(url)})
-    new_headers.update({'User-Agent': ids.user_agent, 'Accept-Encoding': 'gzip', 'key': ids.middleware_token})
     try:
         request = urlopen(Request(url, headers=new_headers))
     except HTTPError as e:

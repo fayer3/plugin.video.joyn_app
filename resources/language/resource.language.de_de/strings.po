@@ -103,9 +103,17 @@ msgid "Settings for Live TV"
 msgstr "Einstellungen für Live TV"
 
 msgctxt "#32106"
-msgid "Show a previev of the current show instead of the channel icon."
+msgid "Show a previev of the current show instead of the channel icon"
 msgstr "Zeige eine Vorschau der aktuellen Sendung statt dem Senderlogo"
 
 msgctxt "#32107"
-msgid "Show the name of the currently playing broadcast in the channel Name."
-msgstr "Zeige den Namen der Aktuellen Sendung im Sender namen."
+msgid "Show the name of the currently playing broadcast in the channel Name"
+msgstr "Zeige den Namen der Aktuellen Sendung im Sender namen"
+
+msgctxt "#32108"
+msgid "Show Seanson/Episode number in video name"
+msgstr "Zeige Staffel/Folgen Nummer im Video Namen"
+
+msgctxt "#32109"
+msgid "Number of trys when getting an ad"
+msgstr "Anzahl an Versuchen bei einer Werbung"

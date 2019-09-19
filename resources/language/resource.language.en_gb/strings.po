@@ -113,3 +113,11 @@ msgstr ""
 msgctxt "#32107"
 msgid "Show the name of the currently playing broadcast in the channel Name."
 msgstr ""
+
+msgctxt "#32108"
+msgid "Show Seanson/Episode number in video name"
+msgstr ""
+
+msgctxt "#32109"
+msgid "Number of trys when getting an ad"
+msgstr ""
