@@ -107,7 +107,7 @@ msgid "Settings for Live TV"
 msgstr ""
 
 msgctxt "#32106"
-msgid "Show a previev of the current show instead of the channel icon"
+msgid "Show a preview of the current show instead of the channel icon"
 msgstr ""
 
 msgctxt "#32107"

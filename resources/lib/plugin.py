@@ -84,7 +84,7 @@ setContent(plugin.handle, 'tvshows')
 def index():
     content = json.loads(get_url(ids.overview_url, critical = True))
     for item in content['response']['blocks']:
-        if item['type'] != 'ResumeLane':
+        if item['type'] != 'ResumeLane' and 'items' in item:
             name = 'Folder'
             if 'Headline' in item['configuration']:
                 name = item['configuration']['Headline']

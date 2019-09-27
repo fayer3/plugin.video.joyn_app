@@ -21,6 +21,8 @@ v0.2.3
 - remove wrong error message
 v0.2.4
 - adapt paths for new routing plugin version, some old favourites might not work any more
-- 0.2.5:
+v0.2.5:
 - add option to show season/episode number of videos in title.
 - fix error with live streams
+v0.2.6
+- fix loading of categories without items
