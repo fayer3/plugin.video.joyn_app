@@ -19,6 +19,9 @@ from resources.lib import xxtea
 from distutils.version import LooseVersion
 from datetime import datetime, timedelta, date
 
+import pytz
+import tzlocal
+
 import codecs
 import locale
 import time
@@ -534,10 +537,14 @@ def show_season(season_id):
         endTIMES = u''
         Note_1 = u''
         if 'visibilities' in item:
-            startDATES = datetime.fromtimestamp(int(item['visibilities'][0]['startsAt']))
+            local_tz = tzlocal.get_localzone()
+            startDATES = datetime(1970, 1, 1) + timedelta(seconds=int(item['visibilities'][0]['startsAt']))
+            log('offset: {0}'.format(startDATES.utcoffset()))
             startTIMES = startDATES.strftime('%d.%m.%Y - %H:%M')
             goDATE =  startDATES.strftime('%d.%m.%Y')
-            endDATES = datetime.fromtimestamp(int(item['visibilities'][0]['endsAt']))
+            endDATES = datetime(1970, 1, 1) + timedelta(seconds=int(item['visibilities'][0]['endsAt']))
+            endDATES = pytz.utc.localize(endDATES)
+            endDATES = endDATES.astimezone(local_tz)
             endTIMES = endDATES.strftime('%d.%m.%Y - %H:%M')
             toDATE =  endDATES.strftime('%d.%m.%Y')
         if startTIMES and endTIMES: Note_1 = kodiutils.get_string(32002).format(startTIMES, endTIMES)

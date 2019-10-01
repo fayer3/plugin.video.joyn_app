@@ -26,3 +26,5 @@ v0.2.5:
 - fix error with live streams
 v0.2.6
 - fix loading of categories without items
+v0.2.7:
+- fix error with dates and times of episodes on "OSMC"
