@@ -1,6 +1,6 @@
 # Kodi Media Center language file
-# Addon Name: Zappn TV
-# Addon id: plugin.video.zappntv
+# Addon Name: Joyn
+# Addon id: plugin.video.joyn_app
 # Addon Provider: fayer3
 msgid ""
 msgstr ""
@@ -23,7 +23,7 @@ msgid "Featured"
 msgstr ""
 
 msgctxt "#32002"
-msgid "Available:[CR][COLOR chartreuse]{0:s}[/COLOR][CR][COLOR chartreuse]{1:s}[/COLOR][CR][CR]"
+msgid "Airdate: [COLOR chartreuse]{0:s}[/COLOR][CR]Available until: [COLOR chartreuse]{1:s}[/COLOR][CR][CR]""
 msgstr ""
 
 msgctxt "#32003"
@@ -80,6 +80,14 @@ msgstr ""
 
 msgctxt "#32016"
 msgid "past EPG"
+msgstr ""
+
+msgctxt "#32017"
+msgid "Airdate: [COLOR chartreuse]{0:s}[/COLOR][CR][CR]"
+msgstr ""
+
+msgctxt "#32018"
+msgid "Available until: [COLOR chartreuse]{0:s}[/COLOR][CR][CR]"
 msgstr ""
 
 msgctxt "#32025"

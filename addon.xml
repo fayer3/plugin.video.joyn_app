@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<addon id="plugin.video.joyn_app" name="Joyn" version="0.2.7" provider-name="fayer3">
+<addon id="plugin.video.joyn_app" name="Joyn" version="0.3.0" provider-name="fayer3">
     <requires>
         <import addon="xbmc.python" version="2.25.0"/>
         <import addon="script.module.routing" version="0.2.0"/>
@@ -25,29 +25,8 @@
         <website>https://joyn.de/</website>
         <email>fb4472 (at) aon.at</email>
         <source>https://github.com/fayer3/plugin.video.zappntv</source>
-        <news>- EPG hinzugefügt
-- JOYN Favoriten hinzugefügt
-- Suche hinzugefügt
-- Name von TV shows korregiert
-- VOD auf lebreelec korregiert
-
-- 0.2.2:
-- Livestreams von sendern mit Umlaut korregiert
-- Auflistung der Livestreams korregiert
-- option für Vorschaubild statt Senderlogo von Livestreams hinzugefügt
-- option für das Anzeigen des Sendungsanmens in der Übersicht von Livestreams hinzugefügt
-
-- 0.2.3:
-- enferne falsche Fehlermeldung
-- 0.2.4:
-- pfade für neue plugin routing addon angepasst, einige alte Favoriten könnten nicht funktionieren, diese müssen neu hinzugefürt werden
-- 0.2.5:
-- option zum anzeigen der Staffel/Folgen nummer in übersicht
-- Fehler mit Livestreams behoben
-- 0.2.6:
-- laden von Kategorien ohne inhalt behoben
-- 0.2.7:
-- Fehler mit Datum und Uhrzeit von Episoden auf "OSMC" behoben
+        <news>- 0.3.0:
+update auf die neue API
         </news>
         <assets>
             <icon>resources/icon.png</icon>

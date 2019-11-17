@@ -86,32 +86,15 @@ setContent(plugin.handle, 'tvshows')
 @plugin.route('/')
 def index():
     content = json.loads(get_url(ids.overview_url, critical = True))
-    for item in content['response']['blocks']:
-        if item['type'] != 'ResumeLane' and 'items' in item:
+    for item in content['data']['page']['blocks']:
+        if item['__typename'] != 'ResumeLane' and item['__typename'] != 'BookmarkLane' :
             name = 'Folder'
-            if 'Headline' in item['configuration']:
-                name = item['configuration']['Headline']
-            elif item['type'] == 'HeroLane':
+            if 'headline' in item:
+                name = item['headline']
+            elif item['__typename'] == 'HeroLane':
                 name = kodiutils.get_string(32001)
-            if len(item['items']) > 1:
-                addDirectoryItem(plugin.handle,plugin.url_for(
-                    show_category, item['id']), ListItem(name), True)
-            elif len(item['items']) == 1:
-                cur = item['items'][0]
-                query = []
-                header = []
-                for param in cur['fetch']['requiredParams']:
-                    if param['in'] == 'query':
-                        query.append(param['name'])
-                    elif param['in'] == 'header':
-                        header.append(param['name'])
-                    else:
-                        kodiutils.notification("ERROR", "new param location " + param['in'])
-                        log("new param location " + param['in'])
-                        log(json.dumps(param))
-                addDirectoryItem(plugin.handle,plugin.url_for(
-                    show_fetch, fetch_id=cur['fetch']['id'], type=cur['type'], query=quote(json.dumps(query)), header=quote(json.dumps(header))), ListItem(name), True)
-                    #show_fetch, fetch_id=cur['fetch']['id'], query='&'.join(query), header='&'.join(header)), ListItem(name), True)
+            addDirectoryItem(plugin.handle,plugin.url_for(
+                show_fetch, fetch_id=item['id'], type=item['__typename']), ListItem(name), True)
     addDirectoryItem(plugin.handle, plugin.url_for(
         show_epg), ListItem('EPG'), True)
     addDirectoryItem(plugin.handle, plugin.url_for(
@@ -124,18 +107,16 @@ def index():
 
 @plugin.route('/search')
 def search():
-    query = query = xbmcgui.Dialog().input(kodiutils.get_string(32014))
+    query = xbmcgui.Dialog().input(kodiutils.get_string(32014))
     if query != '':
-        content = json.loads(get_url(ids.search_tvshow_url.format(quote(query)), critical = True))
-        add_series_from_fetch(content)
-        #TODO check if this works search movies
-        content = json.loads(get_url(ids.search_movie_url.format(quote(query)), critical = True))
-        add_series_from_fetch(content)
+        content = json.loads(get_url(ids.search_url.format(search=quote(query)), critical = True))
+        if('data' in content and 'search' in content['data'] and 'results' in content['data']['search']):
+            add_from_fetch(content['data']['search']['results'])
     endOfDirectory(plugin.handle)
 
 @plugin.route('/epg')
 def show_epg():
-    content = json.loads(get_url(ids.epg_now_url, critical = True))
+    content = json.loads(get_url(ids.epg_now_url, key = False, headers = {'key':ids.middleware_token}, critical = True))
     xbmcplugin.addSortMethod(plugin.handle, xbmcplugin.SORT_METHOD_LABEL)
     #log(json.dumps(content))
     for channel in content['response']['data']:
@@ -149,7 +130,7 @@ def show_channel_epg(channel_id):
     addDirectoryItem(plugin.handle,plugin.url_for(
         show_channel_epg_past, channel_id=channel_id), ListItem(kodiutils.get_string(32016)), True)
     dt_utcnow = datetime.utcnow().date()
-    content = json.loads(get_url(ids.epg_channel_url.format(channel = channel_id)+'&from='+quote(dt_utcnow.strftime('%Y-%m-%d %H:%M:%S')), critical = True))
+    content = json.loads(get_url(ids.epg_channel_url.format(channel = channel_id)+'&from='+quote(dt_utcnow.strftime('%Y-%m-%d %H:%M:%S')),key = False, headers = {'key':ids.middleware_token}, critical = True))
     #log(json.dumps(content))
     if len(content['response']['data']) > 0:
         date_max = datetime.fromtimestamp(content['response']['data'][len(content['response']['data'])-1]['startTime'])
@@ -163,7 +144,7 @@ def show_channel_epg(channel_id):
 @plugin.route('/epg/id=<channel_id>/past')
 def show_channel_epg_past(channel_id):
     dt_utcnow = datetime.utcnow().date()
-    content = json.loads(get_url(ids.epg_channel_url.format(channel = channel_id)+'&to='+quote(dt_utcnow.strftime('%Y-%m-%d %H:%M:%S')), critical = True))
+    content = json.loads(get_url(ids.epg_channel_url.format(channel = channel_id)+'&to='+quote(dt_utcnow.strftime('%Y-%m-%d %H:%M:%S')),key = False, headers = {'key':ids.middleware_token}, critical = True))
     #log(json.dumps(content))
     if len(content['response']['data']) > 0:
         date_min = datetime.fromtimestamp(content['response']['data'][0]['startTime'])
@@ -179,7 +160,7 @@ def show_channel_epg_date(channel_id, day, month, year):
 
     cur_date = date(int(year), int(month), int(day))
 
-    content = json.loads(get_url(ids.epg_channel_url.format(channel = channel_id)+'&from='+quote(cur_date.strftime('%Y-%m-%d %H:%M:%S'))+'&to='+quote((cur_date+timedelta(days=1)).strftime('%Y-%m-%d %H:%M:%S')), critical = True))
+    content = json.loads(get_url(ids.epg_channel_url.format(channel = channel_id)+'&from='+quote(cur_date.strftime('%Y-%m-%d %H:%M:%S'))+'&to='+quote((cur_date+timedelta(days=1)).strftime('%Y-%m-%d %H:%M:%S')),key = False, headers = {'key':ids.middleware_token}, critical = True))
     for channel in content['response']['data']:
         listitem = get_epg_listitem(channel, start_in_label = True)
         addDirectoryItem(plugin.handle, plugin.url_for(show_info), listitem)
@@ -243,178 +224,214 @@ def show_info():
 
 @plugin.route('/fetch/id=<fetch_id>/type=<type>')
 def show_fetch(fetch_id, type):
-    query = json.loads(unquote(plugin.args['query'][0]))
-    header = json.loads(unquote(plugin.args['header'][0]))
-    content = fetch(fetch_id, query, header)
-    add_from_fetch(content, type)
+    i = 0
+    while True:
+        content = json.loads(get_url(ids.fetch_url.format(blockId=fetch_id, offset = ids.offset*i), critical=True))
+        if('data' in content and 'block' in content['data'] and 'assets' in content['data']['block']):
+            if content['data']['block']['__typename'] == 'LiveLane':
+                add_livestreams();
+                endOfDirectory(plugin.handle)
+                return
+            add_from_fetch(content['data']['block']['assets'])
+        else:
+            break
+        if len(content['data']['block']['assets']) != ids.offset:
+            break
+        i += 1
     endOfDirectory(plugin.handle)
 
-def fetch(fetch_id, query, header):
-    url = ids.fetch_url.format(fetch_id)
-    url += u'?'
-    if query:
-        for q in query:
-            if q == 'selection':
-                url += ids.fetch_selection
-            else:
-                kodiutils.notification("ERROR", "unknown query parameter: " + q)
-                log("unknown query parameter: " + q)
-    headers = {}
-    if header:
-        for h in header:
-            if h != 'key':
-                kodiutils.notification("ERROR", "unknown header parameter: " + h)
-                log("unknown header parameter: " + h)
-    content = json.loads(get_url(url, headers = headers, critical=True))
-    return content
+def add_from_fetch(content):
+    for asset in content:
+        if asset['__typename'] == 'Series':
+            add_series(asset)
+        elif asset['__typename'] == 'Brand':
+            add_tvchannel(asset)
+        elif asset['__typename'] == 'EpgEntry':
+            add_livestream(asset)
+        elif asset['__typename'] == 'Compilation':
+            add_compilation(asset)
+        else:
+            kodiutils.notification("ERROR", "unkown type " + asset['__typename'])
+            log("unkown type " + asset['__typename'])
+            log(json.dumps(asset))
 
-def add_from_fetch(content, type):
-    if type.lower() == 'series':
-        add_series_from_fetch(content)
-    elif type.lower() == 'tvchannel':
-        add_tvchannel_from_fetch(content)
-    elif type.lower() == 'query':
-        add_livestreams()
-    else:
-        kodiutils.notification("ERROR", "unkown type " + type)
-        log("unkown type " + type)
-        log(json.dumps(param))
+def add_series(asset):
+    name = ''
+    name = asset['title']
+    if asset['tagline']:
+        name += u': ' + asset['tagline']
+    listitem = ListItem(name)
+    # get images
+    icon=''
+    poster = ''
+    fanart = ''
+    thumbnail = ''
+    for image in asset['images']:
+        if image['type'] == 'PRIMARY':
+            thumbnail = ids.image_url.format(image['url'])
+        elif image['type'] == 'ART_LOGO':
+            icon = ids.image_url.format(image['url'])
+        elif image['type'] == 'HERO_LANDSCAPE':
+            fanart = ids.image_url.format(image['url'])
+        elif image['type'] == 'HERO_PORTRAIT':
+            poster = ids.image_url.format(image['url'])
+    if not poster and thumbnail:
+        poster = thumbnail
+    if not fanart and thumbnail:
+        fanart = thumbnail
+    if not fanart and thumbnail:
+        icon = thumbnail
+    listitem.setArt({'icon': icon, 'thumb': thumbnail, 'poster': poster, 'fanart': fanart})
+    listitem.setInfo(type='Video', infoLabels={'Title': name, 'Plot': asset['description'], 'TvShowTitle': name})
+    add_favorites_context_menu(listitem, plugin.url_for(
+        show_seasons, show_id=asset['id']), name, asset['description'], icon, poster, thumbnail, fanart)
+    addDirectoryItem(plugin.handle, plugin.url_for(
+        show_seasons, show_id=asset['id']), listitem, True)
 
-def add_series_from_fetch(content):
-    for item in content['response']['data']:
-        name = ''
-        for title in item['metadata']['de']['titles']:
-            if title['type'] == 'main':
-                name = title['text']
-        listitem = ListItem(name)
-        # get images
-        icon=''
-        poster = ''
-        fanart = ''
-        thumbnail = ''
-        for image in item['metadata']['de']['images']:
-            if image['type'] == 'PRIMARY':
-                thumbnail = ids.image_url.format(image['url'])
-            elif image['type'] == 'ART_LOGO':
-                icon = ids.image_url.format(image['url'])
-            elif image['type'] == 'HERO_LANDSCAPE':
-                fanart = ids.image_url.format(image['url'])
-            elif image['type'] == 'HERO_PORTRAIT':
-                poster = ids.image_url.format(image['url'])
-        if not poster:
-            poster = thumbnail
-        if not fanart:
-            fanart = thumbnail
-        listitem.setArt({'icon': icon, 'thumb': thumbnail, 'poster': poster, 'fanart': fanart})
-        description = ''
-        for desc in item['metadata']['de']['descriptions']:
-            if desc['type'] == 'main':
-                description = desc['text']
-        listitem.setInfo(type='Video', infoLabels={'Title': name, 'Plot': description, 'TvShowTitle': name})
-        add_favorites_context_menu(listitem, plugin.url_for(
-            show_seasons, show_id=item['id']), name, description, icon, poster, thumbnail, fanart)
-        addDirectoryItem(plugin.handle, plugin.url_for(
-            show_seasons, show_id=item['id']), listitem, True)
-
-def add_tvchannel_from_fetch(content):
+def add_tvchannel(asset):
     #log(json.dumps(content))
-    for item in content['response']['data']:
-        name = ''
-        for title in item['metadata']['de']['titles']:
-            if title['type'] == 'main':
-                name = title['text']
-        listitem = ListItem(name)
-        # get images
-        icon=''
-        for image in item['metadata']['de']['images']:
-            if image['type'] == 'BRAND_LOGO':
-                icon = ids.image_url.format(image['url'])
-        listitem.setArt({'icon': icon, 'thumb': icon, 'poster': icon})
-        description = ''
-        for desc in item['metadata']['de']['descriptions']:
-            if desc['type'] == 'seo':
-                description = desc['text']
-        listitem.setInfo(type='Video', infoLabels={'Title': name, 'Plot': description, 'TvShowTitle': name})
-        addDirectoryItem(plugin.handle,plugin.url_for(
-            show_channel, channel_id=item['channelId']), listitem, True)
+    listitem = ListItem(asset['title'])
+    # get images
+    icon = ids.image_url.format(asset['logo']['url'])
+    listitem.setArt({'icon': icon, 'thumb': icon, 'poster': icon})
+    listitem.setInfo(type='Video', infoLabels={'Title': asset['title'], 'TvShowTitle': asset['title']})
+    addDirectoryItem(plugin.handle,plugin.url_for(
+        show_channel, channel_path=quote(asset['path'], safe='')), listitem, True)
+
+def add_compilation(asset):
+    listitem = ListItem(asset['title'])
+    description = u''
+    details = json.loads(post_url(ids.base_url, ids.compilation_details_post.format(id = asset['id']), key = True, json = True, critical=False))
+    if details and 'data' in details and 'compilation' in details['data'] and 'description' in details['data']['compilation']:
+        description = details['data']['compilation']['description']
+    
+    # get images
+    icon=''
+    poster = ''
+    fanart = ''
+    thumbnail = ''
+    for image in asset['images']:
+        if image['type'] == 'PRIMARY':
+            thumbnail = ids.image_url.format(image['url'])
+        elif image['type'] == 'ART_LOGO':
+            icon = ids.image_url.format(image['url'])
+        elif image['type'] == 'HERO_LANDSCAPE':
+            fanart = ids.image_url.format(image['url'])
+        elif image['type'] == 'HERO_PORTRAIT':
+            poster = ids.image_url.format(image['url'])
+    if not poster and thumbnail:
+        poster = thumbnail
+    if not fanart and thumbnail:
+        fanart = thumbnail
+    if not fanart and thumbnail:
+        icon = thumbnail
+    listitem.setArt({'icon': icon, 'thumb': thumbnail, 'poster': poster, 'fanart': fanart})
+    listitem.setInfo(type='Video', infoLabels={'Title': asset['title'], 'Plot': description})
+    add_favorites_context_menu(listitem, plugin.url_for(
+        show_compilation, compilation_id=asset['id']), asset['title'], u'', icon, poster, thumbnail, fanart)
+    addDirectoryItem(plugin.handle, plugin.url_for(
+        show_compilation, compilation_id=asset['id']), listitem, True)
+
+def add_livestream(asset):
+    brand = u''
+    infoLabels = {}
+    art = {}
+    brand = asset['livestream']['brand']['title']
+    infoLabels.update({'title': asset['secondaryTitle'] if asset['secondaryTitle'] else asset['title']})
+    infoLabels.update({'tvShowTitle': asset['title']})
+
+    local_start_time = datetime.fromtimestamp(asset['startDate'])
+    local_end_time = datetime.fromtimestamp(asset['endDate'])
+    plot = '{0} - {1}'.format(local_start_time.strftime('%H:%M'), local_end_time.strftime('%H:%M'))
+
+    plot += u'[CR][CR]'
+    infoLabels.update({'plot': plot})
+
+    
+    icon = ids.image_url.format(asset['livestream']['brand']['logo']['url'])
+    art.update({'icon': icon, 'thumb': icon})
+    if len(asset['images']) > 0 and kodiutils.get_setting_as_bool('live_preview_for_icon'):
+        for image in asset['images']:
+            if image['type'] == 'LIVE_STILL':
+                art.update({'fanart': ids.image_url.format(image['url'])})
+                art.update({'thumb': ids.image_url.format(image['url'])})
+
+    if infoLabels.get('title') and infoLabels.get('tvShowTitle') and infoLabels.get('title') != infoLabels.get('tvShowTitle'):
+        infoLabels.update({'mediatype': 'episode'})
+    else:
+        # also use episode, because with 'video' it's not possible to view information
+        infoLabels.update({'mediatype': 'episode'})
+    label = u''
+    if brand != infoLabels.get('tvShowTitle'):
+        label = infoLabels.get('tvShowTitle') if not infoLabels.get('title') or infoLabels.get('tvShowTitle') == infoLabels.get('title') else u'[COLOR blue]{0}[/COLOR]  {1}'.format(infoLabels.get('tvShowTitle'), infoLabels.get('title'))
+        label = u'[COLOR lime]{0}[/COLOR]  {1}'.format(brand, label)
+        if kodiutils.get_setting_as_bool('channel_name_in_stream_title') and kodiutils.get_setting_as_bool('live_show_in_label'):
+            infoLabels['title'] = label
+    else:
+        label = brand
+
+    if not kodiutils.get_setting_as_bool('live_show_in_label'):
+        label = brand
+        infoLabels.update({'plot': u'{0}[CR]{1}'.format(infoLabels.get('tvShowTitle') if not infoLabels.get('title') or infoLabels.get('tvShowTitle') == infoLabels.get('title') else u'[COLOR blue]{0}[/COLOR]  {1}'.format(infoLabels.get('tvShowTitle'), infoLabels.get('title')), infoLabels.get('plot'))})
+        if kodiutils.get_setting_as_bool('channel_name_in_stream_title'):
+            infoLabels['title'] = u'[COLOR lime]{0}[/COLOR]  {1}'.format(brand, infoLabels.get('plot'))
+
+    listitem = ListItem(label)
+    listitem.setArt(art)
+    listitem.setProperty('IsPlayable', 'true')
+    listitem.setInfo(type='Video', infoLabels=infoLabels)
+    addDirectoryItem(plugin.handle, plugin.url_for(
+        play_live, stream_id=asset['livestream']['id'], brand=quote(brand.encode('ascii', 'xmlcharrefreplace'))), listitem)
 
 def add_livestreams():
-
     livestreams = []
-    dt_utcnow = datetime.utcnow().replace(second=0)
-    dt_from = dt_utcnow - timedelta(hours=4)
-    dt_to = dt_utcnow + timedelta(hours=10)
-    epg_content = json.loads(get_url(ids.epg_url.format(quote(dt_from.strftime('%Y-%m-%d %H:%M:%S')), quote(dt_to.strftime('%Y-%m-%d %H:%M:%S'))), critical=True))
 
     content = json.loads(get_url(ids.livestream_url, critical=True))
-    for item in content['response']['data']:
-        dt_now = datetime.now()
+    for item in content['data']['brands']:
+        if not 'livestream' in item or item['livestream'] == None:
+            continue
         epg_now = None
         epg_next = None
-        for epg in epg_content['response']['data']:
-            if epg['channelId'] == item['channelId']:
-                if datetime.fromtimestamp(epg['startTime']) < dt_now and dt_now < datetime.fromtimestamp(epg['endTime']):
-                    epg_now = epg
-                elif datetime.fromtimestamp(epg['startTime']) > dt_now:
-                    epg_next = epg
-                if epg_now and epg_next:
-                    break
+        if len(item['livestream']['epg']) > 1:
+            epg_now = item['livestream']['epg'][0]
+            epg_next = item['livestream']['epg'][1]
+        elif len(item['livestream']['epg']) > 0:
+            epg_now = item['livestream']['epg'][0]
 
-        brand = u''
+        brand = item['title']
         infoLabels = {}
         art = {}
         if epg_now:
-            brand = epg_now['tvChannelName']
-            infoLabels.update({'title': epg_now['title'] if epg_now['title'] else epg_now['tvShow']['title']})
-            infoLabels.update({'tvShowTitle': epg_now['tvShow']['title']})
-            infoLabels.update({'year': epg_now['productionYear']})
+            infoLabels.update({'title': epg_now['secondaryTitle'] if epg_now['secondaryTitle'] else epg_now['title']})
+            infoLabels.update({'tvShowTitle': epg_now['title']})
 
-            local_start_time = datetime.fromtimestamp(epg_now['startTime'])
-            local_end_time = datetime.fromtimestamp(epg_now['endTime'])
+            local_start_time = datetime.fromtimestamp(epg_now['startDate'])
+            local_end_time = datetime.fromtimestamp(epg_now['endDate'])
             plot = '{0} - {1}'.format(local_start_time.strftime('%H:%M'), local_end_time.strftime('%H:%M'))
             if epg_next:
-                next_title = epg_next.get('title') if epg_next.get('title') else None
-                next_show = epg_next.get('tvShow').get('title') if epg_next.get('tvShow') else u''
+                next_title = epg_next.get('secondaryTitle') if epg_next.get('secondaryTitle') else None
+                next_show = epg_next.get('title') if epg_next.get('title') else u''
 
                 plot += u'[CR]{0}: [COLOR blue]{1}[/COLOR] {2}'.format(kodiutils.get_string(32006), next_show, next_title) if next_title and next_show != u'' and next_title != next_show else u'[CR]{0}: {1}'.format(kodiutils.get_string(32006),next_title if next_title else next_show)
 
             plot += u'[CR][CR]'
-            plot += epg_now['description'] if epg_now['description'] else u''
             infoLabels.update({'plot': plot})
 
-            genres = []
-            for genre in epg_now['genres']:
-                if genre['title'] not in genres:
-                    genres.append(genre['title'])
-            if len(genres) > 0:
-                infoLabels.update({'genre': u', '.join(genres)})
-
-            for image in item['metadata']['de']['images']:
-                if image['type'] == 'BRAND_LOGO':
-                    icon = ids.image_url.format(image['url'])
-                    art.update({'icon': icon, 'thumb': icon})
+            icon = ids.image_url.format(item['logo']['url'])
+            art.update({'icon': icon, 'thumb': icon})
             if len(epg_now['images']) > 0 and kodiutils.get_setting_as_bool('live_preview_for_icon'):
                 for image in epg_now['images']:
-                    if image['subType'] == 'art_direction':
+                    if image['subType'] == 'LIVE_STILL':
                         art.update({'fanart': ids.image_url.format(image['url'])})
-                    elif image['subType'] == 'cover':
                         art.update({'thumb': ids.image_url.format(image['url'])})
         else:
-            for title in item['metadata']['de']['titles']:
-                if title['type'] == 'main':
-                    brand = title['text']
-                    infoLabels.update({'title': brand})
-                    infoLabels.update({'tvShowTitle': brand})
+            brand = title['title']
+            infoLabels.update({'title': brand})
+            infoLabels.update({'tvShowTitle': brand})
 
             # get images
-            for image in item['metadata']['de']['images']:
-                if image['type'] == 'BRAND_LOGO':
-                    icon = ids.image_url.format(image['url'])
-                    art.update({'icon': icon, 'thumb': icon, 'poster': icon})
-
-            for desc in item['metadata']['de']['descriptions']:
-                if desc['type'] == 'main':
-                    infoLabels.update({'plot': desc['text']})
+            icon = ids.image_url.format(item['logo']['url'])
+            art.update({'icon': icon, 'thumb': icon, 'poster': icon})
 
         if infoLabels.get('title') and infoLabels.get('tvShowTitle') and infoLabels.get('title') != infoLabels.get('tvShowTitle'):
             infoLabels.update({'mediatype': 'episode'})
@@ -440,51 +457,130 @@ def add_livestreams():
         listitem.setArt(art)
         listitem.setProperty('IsPlayable', 'true')
         listitem.setInfo(type='Video', infoLabels=infoLabels)
-        if len(item['metadata']['de']['livestreams']) > 0:
-            livestreams.append((plugin.url_for(
-                play_live, stream_id=item['metadata']['de']['livestreams'][0]['streamId'], brand=quote(brand.encode('ascii', 'xmlcharrefreplace'))), listitem))
+        livestreams.append((plugin.url_for(
+            play_live, stream_id=item['livestream']['id'], brand=quote(brand.encode('ascii', 'xmlcharrefreplace'))), listitem))
 
     livestreams.sort(key=lambda x: x[1].getLabel().lower(), reverse=False)
 
     addDirectoryItems(plugin.handle, livestreams)
 
 
-@plugin.route('/channel/id=<channel_id>')
-def show_channel(channel_id):
+@plugin.route('/channel/id=<channel_path>')
+def show_channel(channel_path):
     current = 0
-    content = json.loads(get_url(ids.channel_url.format(current, channel_id), critical=True))
-    add_series_from_fetch(content)
-    while len(content['response']['data']) == ids.channel_limit:
-        current += ids.channel_limit
-        content = json.loads(get_url(ids.channel_url.format(current, channel_id), critical=True))
-        add_series_from_fetch(content)
+    content = json.loads(get_url(ids.channel_url.format(channelpath=channel_path, offset=0), critical=True))
+    if('data' in content and 'page' in content['data'] and 'assets' in content['data']['page']):
+        add_from_fetch(content['data']['page']['assets'])
+        while len(content['data']['page']['assets']) == ids.offset:
+            content = json.loads(get_url(ids.channel_url.format(channelpath=channel_path, offset=ids.offset*current), critical=True))
+            if('data' in content and 'page' in content['data'] and 'assets' in content['data']['page']):
+                add_from_fetch(content['data']['page']['assets'])
+            else:
+                break
+            current += 1
+    endOfDirectory(plugin.handle)
+
+@plugin.route('/compilation/id=<compilation_id>')
+def show_compilation(compilation_id):
+    series_name = u''
+    series_icon = u''
+    series_poster = u''
+    series_thumbnail = u''
+    series_fanart = u''
+    
+    setContent(plugin.handle, 'tvshows')
+    current = 0
+    while True:
+        content = json.loads(post_url(ids.base_url, ids.compilation_items_post.format(id = compilation_id, offset = ids.offset*current), key = True, json = True, critical = True))
+        for item in content['data']['compilation']['compilationItems']:
+            if not series_name and 'compilation' in item:
+                series_name = item['compilation']['title']
+                for image in item['compilation']['images']:
+                    if image['type'] == 'PRIMARY':
+                        series_thumbnail = ids.image_url.format(image['url'])
+                    elif image['type'] == 'ART_LOGO':
+                        series_icon = ids.image_url.format(image['url'])
+                    elif image['type'] == 'HERO_LANDSCAPE':
+                        series_fanart = ids.image_url.format(image['url'])
+                    elif image['type'] == 'HERO_PORTRAIT':
+                        series_poster = ids.image_url.format(image['url'])
+            airDATE = None
+            toDATE = None
+            airTIMES = u''
+            endTIMES = u''
+            Note_1 = u''
+            if 'startsAt' in item and item['startsAt'] != None:
+                local_tz = tzlocal.get_localzone()
+                airDATES = datetime(1970, 1, 1) + timedelta(seconds=int(item['startsAt']))
+                airDATES = pytz.utc.localize(airDATES)
+                airDATES = airDATES.astimezone(local_tz)
+                airTIMES = airDATES.strftime('%d.%m.%Y - %H:%M')
+                airDATE = airDATES.strftime('%d.%m.%Y')
+            
+            if 'endsAt' in item and item['endsAt'] != None:
+                local_tz = tzlocal.get_localzone()
+                endDATES = datetime(1970, 1, 1) + timedelta(seconds=int(item['endsAt']))
+                endDATES = pytz.utc.localize(endDATES)
+                endDATES = endDATES.astimezone(local_tz)
+                endTIMES = endDATES.strftime('%d.%m.%Y - %H:%M')
+                toDATE =  endDATES.strftime('%d.%m.%Y')
+            if airTIMES and endTIMES: 
+                Note_1 = kodiutils.get_string(32002).format(airTIMES, endTIMES)
+            elif airTIMES: 
+                Note_1 = kodiutils.get_string(32017).format(airTIMES)
+            elif endTIMES: 
+                Note_1 = kodiutils.get_string(32018).format(endTIMES)
+            name = item['title']
+            listitem = ListItem(name)
+            # get images
+            icon = u''
+            poster = u''
+            fanart = u''
+            thumbnail = u''
+            for image in item['images']:
+                if image['type'] == 'PRIMARY':
+                    thumbnail = ids.image_url.format(image['url'])
+                elif image['type'] == 'ART_LOGO':
+                    icon = ids.image_url.format(image['url'])
+                elif image['type'] == 'HERO_LANDSCAPE':
+                    fanart = ids.image_url.format(image['url'])
+                elif image['type'] == 'HERO_PORTRAIT':
+                    poster = ids.image_url.format(image['url'])
+            if not poster:
+                poster = thumbnail
+            if not fanart:
+                fanart = thumbnail
+            if not icon:
+                icon = thumbnail
+            listitem.setArt({'icon': icon, 'thumb': thumbnail, 'poster': poster, 'fanart': fanart})
+            description = u''
+            description = item['description']
+            listitem.setProperty('IsPlayable', 'true')
+            listitem.setInfo(type='Video', infoLabels={'Title': name, 'Plot': Note_1+description, 'Duration': item['video']['duration'], 'Date': airDATE, 'mediatype': 'episode'})
+            listitem.addContextMenuItems([('Queue', 'Action(Queue)')])
+            addDirectoryItem(plugin.handle,plugin.url_for(
+                play_episode, episode_id=item['video']['id']), listitem)
+        if len(content['data']['compilation']['compilationItems']) != ids.offset:
+            break
+        current += 1
+    add_favorites_folder(plugin.url_for(show_compilation, compilation_id),
+        series_name, '', icon, poster, thumbnail, fanart)
     endOfDirectory(plugin.handle)
 
 @plugin.route('/seasons/id=<show_id>')
 def show_seasons(show_id):
-
     icon = u''
     poster = u''
     fanart = u''
     thumbnail = u''
     series_name = u''
     series_desc = u''
-    content_tvshow_data = get_url(ids.tvshow_url.format(show_id), critical = False)
-    if content_tvshow_data:
-        content_tvshow = json.loads(content_tvshow_data)
-        for item in content_tvshow['response']['data']:
-            for title in item['metadata']['de']['titles']:
-                if title['type'] == 'main':
-                    series_name = title['text']
-                    break
-            for desc in item['metadata']['de']['descriptions']:
-                if desc['type'] == 'main':
-                    series_desc = desc['text']
-                    break
-            if series_name != '' and series_desc != '':
-                break
-
-        for image in content_tvshow['response']['data'][0]['metadata']['de']['images']:
+    content_data = get_url(ids.series_url.format(seriesId = show_id), critical = False)
+    if content_data:
+        content = json.loads(content_data)
+        series_name = content['data']['series']['title']
+        series_desc = content['data']['series']['description']
+        for image in content['data']['series']['images']:
             if image['type'] == 'PRIMARY':
                 thumbnail = ids.image_url.format(image['url'])
             elif image['type'] == 'ART_LOGO':
@@ -493,35 +589,20 @@ def show_seasons(show_id):
                 fanart = ids.image_url.format(image['url'])
             elif image['type'] == 'HERO_PORTRAIT':
                 poster = ids.image_url.format(image['url'])
-        if not poster:
+        if not poster and thumbnail:
             poster = thumbnail
-        if not fanart:
+        if not fanart and thumbnail:
             fanart = thumbnail
-    content_data = get_url(ids.seasons_url.format(show_id), critical = False)
-    if content_data:
-        content = json.loads(content_data)
-        for item in content['response']['data']:
-            name = u''
-            if 'seasonNumber' in str(item['metadata']['de']) and str(item['metadata']['de']['seasonNumber']) != '':
-                name = u'Staffel {0}'.format(item['metadata']['de']['seasonNumber'])
-            else:
-                for title in item['metadata']['de']['titles']:
-                    if title['type'] == 'main':
-                        name = title['text']
+        if not icon and thumbnail:
+            icon = thumbnail
+        for season in content['data']['series']['seasons']:
+            name = u'Staffel {0}'.format(season['number'])
             listitem = ListItem(name)
             # get images
-            icon = u''
-            for image in item['metadata']['de']['images']:
-                if image['type'] == 'PRIMARY':
-                    icon = ids.image_url.format(image['url'])
             listitem.setArt({'icon': icon, 'thumb': thumbnail, 'poster': poster, 'fanart': fanart})
-            description = u''
-            for desc in item['metadata']['de']['descriptions']:
-                if desc['type'] == 'main':
-                    description = desc['text']
-            listitem.setInfo(type='Video', infoLabels={'Title': name, 'Plot': description, 'TvShowTitle': name})
+            listitem.setInfo(type='Video', infoLabels={'Title': name, 'Plot': series_desc, 'TvShowTitle': series_name})
             addDirectoryItem(plugin.handle,plugin.url_for(
-                show_season, season_id=item['id']), listitem, True)
+                show_season, season_id=season['id']), listitem, True)
     add_favorites_folder(plugin.url_for(show_seasons, show_id),
         series_name, series_desc, icon, poster, thumbnail, fanart)
     endOfDirectory(plugin.handle)
@@ -529,68 +610,82 @@ def show_seasons(show_id):
 @plugin.route('/season/id=<season_id>')
 def show_season(season_id):
     setContent(plugin.handle, 'tvshows')
-    content = json.loads(get_url(ids.season_url.format(season_id), critical = True))
-    for item in content['response']['data']:
-        goDATE = None
-        toDATE = None
-        startTIMES = u''
-        endTIMES = u''
-        Note_1 = u''
-        if 'visibilities' in item:
-            local_tz = tzlocal.get_localzone()
-            startDATES = datetime(1970, 1, 1) + timedelta(seconds=int(item['visibilities'][0]['startsAt']))
-            log('offset: {0}'.format(startDATES.utcoffset()))
-            startTIMES = startDATES.strftime('%d.%m.%Y - %H:%M')
-            goDATE =  startDATES.strftime('%d.%m.%Y')
-            endDATES = datetime(1970, 1, 1) + timedelta(seconds=int(item['visibilities'][0]['endsAt']))
-            endDATES = pytz.utc.localize(endDATES)
-            endDATES = endDATES.astimezone(local_tz)
-            endTIMES = endDATES.strftime('%d.%m.%Y - %H:%M')
-            toDATE =  endDATES.strftime('%d.%m.%Y')
-        if startTIMES and endTIMES: Note_1 = kodiutils.get_string(32002).format(startTIMES, endTIMES)
-        name = u''
-        for title in item['metadata']['de']['titles']:
-            if title['type'] == 'main':
-                name = title['text']
-        if kodiutils.get_setting_as_bool('number_in_name'):
-            season = ''
-            episode = ''
-            if 'seasonNumber' in item['metadata']['de'] and item['metadata']['de']['seasonNumber'] != None:
-                season = 'Staffel {0} '.format(item['metadata']['de']['seasonNumber'])
-            if 'episodeNumber' in item['metadata']['de'] and item['metadata']['de']['episodeNumber'] != None:
-                episode = 'Episode {0} '.format(item['metadata']['de']['episodeNumber'])
-            name = u'{0}{1}{2}'.format(season, episode, name)
-        listitem = ListItem(name)
-        # get images
-        icon = u''
-        poster = u''
-        fanart = u''
-        thumbnail = u''
-        for image in item['metadata']['de']['images']:
-            if image['type'] == 'PRIMARY':
-                thumbnail = ids.image_url.format(image['url'])
-            elif image['type'] == 'ART_LOGO':
-                icon = ids.image_url.format(image['url'])
-            elif image['type'] == 'HERO_LANDSCAPE':
-                fanart = ids.image_url.format(image['url'])
-            elif image['type'] == 'HERO_PORTRAIT':
-                poster = ids.image_url.format(image['url'])
-        if not poster:
-            poster = thumbnail
-        if not fanart:
-            fanart = thumbnail
-        if not icon:
-            icon = thumbnail
-        listitem.setArt({'icon': icon, 'thumb': thumbnail, 'poster': poster, 'fanart': fanart})
-        description = u''
-        for desc in item['metadata']['de']['descriptions']:
-            if desc['type'] == 'main':
-                description = desc['text']
-        listitem.setProperty('IsPlayable', 'true')
-        listitem.setInfo(type='Video', infoLabels={'Title': name, 'Plot': Note_1+description, 'TvShowTitle': html_parser.unescape(item['tvShow']['titles']['default']), 'Season': item['metadata']['de']['seasonNumber'], 'episode': item['metadata']['de']['episodeNumber'], 'Duration': item['metadata']['de']['video']['duration'], 'Date': goDATE, 'mediatype': 'episode'})
-        listitem.addContextMenuItems([('Queue', 'Action(Queue)')])
-        addDirectoryItem(plugin.handle,plugin.url_for(
-            play_episode, episode_id=item['id']), listitem)
+    current = 0
+    while True:
+        post = True
+        content = json.loads(post_url(ids.base_url, ids.season_post_custom.format(seasonId = season_id, offset = ids.offset*current), key = True, json = True, critical = False))
+        if not content or 'errors' in content:
+            content = json.loads(get_url(ids.season_url.format(seasonId = season_id, offset = ids.offset*current), critical = True))
+            post = False
+        for item in content['data']['season']['episodes']:
+            airDATE = None
+            toDATE = None
+            airTIMES = u''
+            endTIMES = u''
+            Note_1 = u''
+            if 'airdate' in item and item['airdate'] != None:
+                local_tz = tzlocal.get_localzone()
+                airDATES = datetime(1970, 1, 1) + timedelta(seconds=int(item['airdate']))
+                airDATES = pytz.utc.localize(airDATES)
+                airDATES = airDATES.astimezone(local_tz)
+                airTIMES = airDATES.strftime('%d.%m.%Y - %H:%M')
+                airDATE = airDATES.strftime('%d.%m.%Y')
+            
+            if 'endsAt' in item and item['endsAt'] != None:
+                local_tz = tzlocal.get_localzone()
+                endDATES = datetime(1970, 1, 1) + timedelta(seconds=int(item['endsAt']))
+                endDATES = pytz.utc.localize(endDATES)
+                endDATES = endDATES.astimezone(local_tz)
+                endTIMES = endDATES.strftime('%d.%m.%Y - %H:%M')
+                toDATE =  endDATES.strftime('%d.%m.%Y')
+            if airTIMES and endTIMES: 
+                Note_1 = kodiutils.get_string(32002).format(airTIMES, endTIMES)
+            elif airTIMES: 
+                Note_1 = kodiutils.get_string(32017).format(airTIMES)
+            elif endTIMES: 
+                Note_1 = kodiutils.get_string(32018).format(endTIMES)
+            name = item['title']
+            if kodiutils.get_setting_as_bool('number_in_name'):
+                season = ''
+                episode = ''
+                if 'season' in item and 'number' in item['season'] and item['season']['number'] != None:
+                    season = 'Staffel {0} '.format(item['season']['number'])
+                if 'number' in item and item['number'] != None:
+                    episode = 'Episode {0} '.format(item['number'])
+                name = u'{0}{1}{2}'.format(season, episode, name)
+            listitem = ListItem(name)
+            # get images
+            icon = u''
+            poster = u''
+            fanart = u''
+            thumbnail = u''
+            for image in item['images']:
+                if image['type'] == 'PRIMARY':
+                    thumbnail = ids.image_url.format(image['url'])
+                elif image['type'] == 'ART_LOGO':
+                    icon = ids.image_url.format(image['url'])
+                elif image['type'] == 'HERO_LANDSCAPE':
+                    fanart = ids.image_url.format(image['url'])
+                elif image['type'] == 'HERO_PORTRAIT':
+                    poster = ids.image_url.format(image['url'])
+            if not poster:
+                poster = thumbnail
+            if not fanart:
+                fanart = thumbnail
+            if not icon:
+                icon = thumbnail
+            listitem.setArt({'icon': icon, 'thumb': thumbnail, 'poster': poster, 'fanart': fanart})
+            description = u''
+            if post:
+                description = item['description']
+            listitem.setProperty('IsPlayable', 'true')
+            listitem.setInfo(type='Video', infoLabels={'Title': name, 'Plot': Note_1+description, 'Season': item['season']['number'], 'episode': item['number'], 'Duration': item['video']['duration'], 'Date': airDATE, 'mediatype': 'episode'})
+            listitem.addContextMenuItems([('Queue', 'Action(Queue)')])
+            addDirectoryItem(plugin.handle,plugin.url_for(
+                play_episode, episode_id=item['video']['id']), listitem)
+        if len(content['data']['season']['episodes']) != ids.offset:
+            break
+        current += 1
     endOfDirectory(plugin.handle)
 
 @plugin.route('/settings')
@@ -614,38 +709,6 @@ def show_category(category_id):
             add_favorites_context_menu(listitem, item, favorites[item]['name'], favorites[item]['desc'], favorites[item]['icon'], favorites[item]['poster'], favorites[item]['thumbnail'], favorites[item]['fanart'])
             addDirectoryItem(plugin.handle, url=item,
                 listitem=listitem, isFolder=True)
-    else:
-        content = json.loads(get_url(ids.overview_url, critical = True))
-        for category in content['response']['blocks']:
-            if category_id == category['id']:
-                if multiprocess:
-                    threads = []
-                    pool = ThreadPool(processes=kodiutils.get_setting_as_int('simultanious_requests'))
-                for item in category['items']:
-                    query = []
-                    header = []
-                    for param in item['fetch']['requiredParams']:
-                        if param['in'] == 'query':
-                            query.append(param['name'])
-                        elif param['in'] == 'header':
-                            header.append(param['name'])
-                        else:
-                            kodiutils.notification(u'ERROR', u'new param location {0}'.format(param['in']))
-                            log(u'new param location {0}'.format(param['in']))
-                            log(json.dumps(param))
-                    #fetch(fetch_id=item['fetch']['id'], query=query, header=header)
-                    if multiprocess:
-                        thread = pool.apply_async(fetch, (item['fetch']['id'], query, header))
-                        thread.name = item['type']
-                        thread.daemon = True
-                        threads.append(thread)
-                    else:
-                        add_from_fetch(fetch(item['fetch']['id'], query, header), item['type'])
-                if multiprocess:
-                    for thread in threads:
-                        add_from_fetch(thread.get(), thread.name)
-                        pool.close()
-                        pool.join()
     endOfDirectory(plugin.handle)
 
 @plugin.route('/episode/<episode_id>')
@@ -655,11 +718,17 @@ def play_episode(episode_id):
         kodiutils.notification(u'ERROR', kodiutils.get_string(32025))
         setResolvedUrl(plugin.handle, False, ListItem('none'))
         return
-    content = json.loads(get_url(ids.video_info_url.format(episode_id), critical = True))
-    player_config_data = json.loads(get_url(ids.player_config_url, cache = True, critical = True))
+    content = json.loads(get_url(ids.episode_url.format(episodeId=episode_id), critical = True))
+    content = content['data']['episode']
+    series = content['series']
+    if content['series'] == None:
+        content = json.loads(post_url(ids.base_url, ids.compilation_item_post.format(id=episode_id), key = True, json = True, critical = True))
+        content = content['data']['compilationItem']
+        series = content['compilation']
+    player_config_data = json.loads(get_url(ids.player_config_url, key = False, cache = True, critical = True))
     player_config = json.loads(base64.b64decode(xxtea.decryptHexToStringss(player_config_data['toolkit']['psf'], ids.xxtea_key)))
-    nuggvars_data = get_url(ids.nuggvars_url, critical=True)
-    psf_config = json.loads(get_url(ids.psf_config_url, critical = True))
+    nuggvars_data = get_url(ids.nuggvars_url, key = False, critical = True)
+    psf_config = json.loads(get_url(ids.psf_config_url, key = False, critical = True))
     playoutBaseUrl = psf_config['default']['vod']['playoutBaseUrl']
     entitlementBaseUrl = psf_config['default']['vod']['entitlementBaseUrl']
 
@@ -669,12 +738,12 @@ def play_episode(episode_id):
     else:
         entitlement_token_data = json.loads(post_url(entitlementBaseUrl+ids.entitlement_token_url, postdata=postdata, headers={u'x-api-key': psf_config['default']['vod']['apiGatewayKey']}, json = True, critical=True))
 
-    tracking = content['response']['tracking']
-    genres = u'["'+u'","'.join(tracking['genres'])+u'"]'
+    tracking = content['tracking']
+    #genres = u'["'+u'","'.join(tracking['genres'])+u'"]'
 
     nuggvars = nuggvars_data.replace('{"','').replace(',"url":""}','').replace('":','=').replace(',"','&')
 
-    clientData = base64.b64encode((ids.clientdata.format(nuggvars=nuggvars[:-1], episode_id=episode_id, duration=content['response']['video']['duration'], brand=tracking['channel'], genres=genres, tvshow_id=tracking['tvShow']['id'])).encode('utf-8')).decode('utf-8')
+    clientData = base64.b64encode((ids.clientdata.format(nuggvars=nuggvars[:-1], episode_id=episode_id, duration=content['video']['duration'], brand=tracking['brand'], tvshow_id=series['id'])).encode('utf-8')).decode('utf-8')
     log(u'clientData: {0}'.format(clientData))
 
     sig = u'{episode_id},{entitlement_token},{clientData}{xxtea_key_hex}'.format(episode_id=episode_id, entitlement_token=entitlement_token_data['entitlement_token'], clientData=clientData, xxtea_key_hex=codecs.encode(ids.xxtea_key.encode('utf-8'),'hex').decode('utf-8'))
@@ -690,17 +759,17 @@ def play_episode(episode_id):
         #got add, extract mpd
         log(u'stream with add: {0}'.format(video_data['videoUrl']))
         video_url = video_data['videoUrl']
-        video_url_data = get_url(video_url, critical = True)
+        video_url_data = get_url(video_url, headers={'User-Agent': ids.video_useragent}, key = False, critical = True)
         # get base url
         base_urls = re.findall('<BaseURL>(.*?)</BaseURL>',video_url_data)
         if len(base_urls) > 0 and base_urls[0].startswith('http'):
-            video_url = base_urls[0] + u'.mpd|User-Agent=vvs-native-android/3.1.0.301003151 (Linux;Android 7.1.1) ExoPlayerLib/2.10.0'
+            video_url = base_urls[0] + u'.mpd|User-Agent='+ids.video_useragent
         else:
             kodiutils.notification(u'INFO', kodiutils.get_string(32005))
             setResolvedUrl(plugin.handle, False, playitem)
             return
     else:
-        video_url = video_data['videoUrl'].rpartition('?')[0] + u'|User-Agent=vvs-native-android/3.1.0.301003151 (Linux;Android 7.1.1) ExoPlayerLib/2.10.0'
+        video_url = video_data['videoUrl'].rpartition('?')[0] + u'|User-Agent='+ids.video_useragent
 
     is_helper = None
     if video_data['drm'] != u'widevine':
@@ -728,7 +797,7 @@ def play_episode(episode_id):
         playitem.setProperty('inputstreamaddon', is_helper.inputstream_addon)
         playitem.setProperty('inputstream.adaptive.manifest_type', 'mpd')
         playitem.setProperty('inputstream.adaptive.license_type', 'com.widevine.alpha')
-        playitem.setProperty('inputstream.adaptive.license_key', video_data['licenseUrl'] +"|User-Agent=vvs-native-android/3.1.0.301003151 (Linux;Android 7.1.1) ExoPlayerLib/2.10.0&Content-Type=application/octet-stream|R{SSM}|")
+        playitem.setProperty('inputstream.adaptive.license_key', video_data['licenseUrl'] +"|User-Agent="+ids.video_useragent+"&Content-Type=application/octet-stream|R{SSM}|")
         setResolvedUrl(plugin.handle, True, playitem)
     else:
         kodiutils.notification(u'ERROR', kodiutils.get_string(32019).format(drm))
@@ -741,9 +810,9 @@ def play_live(stream_id, brand, _try=1):
         kodiutils.notification(u'ERROR', kodiutils.get_string(32025))
         setResolvedUrl(plugin.handle, False, ListItem('none'))
         return
-    player_config_data = json.loads(get_url(ids.player_config_url, cache = True, critical = True))
+    player_config_data = json.loads(get_url(ids.player_config_url, key = False, cache = True, critical = True))
     player_config = json.loads(base64.b64decode(xxtea.decryptHexToStringss(player_config_data['toolkit']['psf'], ids.xxtea_key)))
-    psf_config = json.loads(get_url(ids.psf_config_url, critical = True))
+    psf_config = json.loads(get_url(ids.psf_config_url, key = False, critical = True))
     playoutBaseUrl = psf_config['default']['live']['playoutBaseUrl']
     entitlementBaseUrl = psf_config['default']['live']['entitlementBaseUrl']
     brand = html_parser.unescape(unquote(brand))
@@ -782,7 +851,7 @@ def play_live(stream_id, brand, _try=1):
         #got add, extract mpd
         log(u'stream with add: {0}'.format(video_url))
         #return
-        video_url_data = get_url(video_url, headers={'User-Agent': 'vvs-native-android/3.1.0.301003151 (Linux;Android 7.1.1) ExoPlayerLib/2.10.0'}, key = False, critical = True)
+        video_url_data = get_url(video_url, headers={'User-Agent': ids.video_useragent}, key = False, critical = True)
         if 'BaseURL' not in video_url_data and _try < kodiutils.get_setting_as_int('ad_tries'):
             play_live(stream_id, brand, _try+1)
             return
@@ -791,7 +860,7 @@ def play_live(stream_id, brand, _try=1):
             setResolvedUrl(plugin.handle, False, ListItem('none'))
             return
     else:
-        video_url_data = get_url(video_url, critical = True)
+        video_url_data = get_url(video_url, headers={'User-Agent': ids.video_useragent}, key = False, critical = True)
     
     # check base urls
     base_urls = re.findall('<BaseURL>(.*?)</BaseURL>', video_url_data)
@@ -815,13 +884,13 @@ def play_live(stream_id, brand, _try=1):
         inputstream_installed = is_helper._has_inputstream()
 
     if inputstream_installed and is_helper.check_inputstream():
-        playitem.setPath(video_url + u'|User-Agent=vvs-native-android/3.1.0.301003151 (Linux;Android 7.1.1) ExoPlayerLib/2.10.0')
+        playitem.setPath(video_url + u'|User-Agent='+ids.video_useragent)
         #playitem.path= = ListItem(label=xbmc.getInfoLabel('Container.ShowTitle'), path=urls["urls"]["dash"][drm_name]["url"]+"|User-Agent=vvs-native-android/1.0.10 (Linux;Android 7.1.1) ExoPlayerLib/2.8.1")
         playitem.setProperty('inputstreamaddon', is_helper.inputstream_addon)
         playitem.setProperty('inputstream.adaptive.manifest_type', 'mpd')
         playitem.setProperty('inputstream.adaptive.license_type', 'com.widevine.alpha')
         playitem.setProperty("inputstream.adaptive.manifest_update_parameter", 'full')
-        playitem.setProperty('inputstream.adaptive.license_key', video_data['licenseUrl'] + u'|User-Agent=vvs-native-android/3.1.0.301003151 (Linux;Android 7.1.1) ExoPlayerLib/2.10.0|R{SSM}|')
+        playitem.setProperty('inputstream.adaptive.license_key', video_data['licenseUrl'] + u'|User-Agent='+ids.video_useragent+'|R{SSM}|')
         setResolvedUrl(plugin.handle, True, playitem)
     else:
         kodiutils.notification(u'ERROR', kodiutils.get_string(32019).format(drm))
@@ -976,7 +1045,9 @@ def get_url(url, headers={}, key=True, cache=False, critical=False):
     new_headers = {}
     new_headers.update({'User-Agent': ids.user_agent, 'Accept-Encoding': 'gzip'})
     if key:
-        new_headers.update({'key': ids.middleware_token})
+        new_headers.update({'x-api-key': ids.middleware_token})
+        new_headers.update({'Joyn-Platform': 'android'})
+        new_headers.update({'Joyn-Client-Version': ids.joyn_version})
     new_headers.update(headers)
     if cache == True:
         new_headers.update({'If-Modified-Since': ids.get_config_tag(url)})
@@ -1021,12 +1092,16 @@ def get_url(url, headers={}, key=True, cache=False, critical=False):
         ids.set_config_cache(url, data, request.info().get('Last-Modified'))
     return data
 
-def post_url(url, postdata, headers={}, json = False, critical=False):
+def post_url(url, postdata, headers={}, json = False, key = False, critical=False):
     log(u'post: {0}, {1}'.format(url, headers))
     new_headers = {}
     new_headers.update(headers)
     if json:
         new_headers.update({'Content-Type': 'application/json; charset=utf-8'})
+    if key:
+        new_headers.update({'x-api-key': ids.middleware_token})
+        new_headers.update({'Joyn-Platform': 'android'})
+        new_headers.update({'Joyn-Client-Version': ids.joyn_version})
     try:
         request = urlopen(Request(url, headers=new_headers, data=postdata.encode('utf-8')))
     except HTTPError as e:

@@ -1,6 +1,6 @@
 # Kodi Media Center language file
-# Addon Name: Zappn TV
-# Addon id: plugin.video.zappntv
+# Addon Name: Joyn
+# Addon id: plugin.video.joyn_app
 # Addon Provider: fayer3
 msgid ""
 msgstr ""
@@ -23,8 +23,8 @@ msgid "Featured"
 msgstr ""
 
 msgctxt "#32002"
-msgid "Available:[CR][COLOR chartreuse]{0:s}[/COLOR][CR][COLOR chartreuse]{1:s}[/COLOR][CR][CR]"
-msgstr "Verfügbar:[CR][COLOR chartreuse]{0:s}[/COLOR][CR][COLOR chartreuse]{1:s}[/COLOR][CR][CR]"
+msgid "Airdate: [COLOR chartreuse]{0:s}[/COLOR][CR]Available until: [COLOR chartreuse]{1:s}[/COLOR][CR][CR]""
+msgstr "Ausgestrahlt: [COLOR chartreuse]{0:s}[/COLOR][CR]Verfügbar bis: [COLOR chartreuse]{1:s}[/COLOR][CR][CR]"
 
 msgctxt "#32003"
 msgid "not available in this country"
@@ -81,6 +81,14 @@ msgstr "EPG vom [COLOR chartreuse]{0}[/COLOR]"
 msgctxt "#32016"
 msgid "past EPG"
 msgstr "früheres EPG"
+
+msgctxt "#32017"
+msgid "Airdate: [COLOR chartreuse]{0:s}[/COLOR][CR][CR]"
+msgstr "Ausgestrahlt: [COLOR chartreuse]{0:s}[/COLOR][CR][CR]"
+
+msgctxt "#32018"
+msgid "Available until: [COLOR chartreuse]{0:s}[/COLOR][CR][CR]"
+msgstr "Verfügbar bis: [COLOR chartreuse]{0:s}[/COLOR][CR][CR]"
 
 msgctxt "#32025"
 msgid "DRM content requires Kodi 18.0"
