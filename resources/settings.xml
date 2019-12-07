@@ -1,12 +1,20 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <settings>
+  <category label="32118">
+    <setting label="32119" type="lsep"/>
     <setting id="debug" type="bool" label="32101" default="false"/>
     <setting id="simultanious_requests" type="number" label="32102" default="10"/>
     <setting id="fake_ip" type="bool" label="32103" default="false"/>
     <setting id="number_in_name" type="bool" label="32108" default="false"/>
+    <setting id="svod" type="enum" label="32110" lvalues="32111|32112|32113"/>
+    <setting id="update_check" type="select" sort="false" label="32114" lvalues="32115|32116|32117"/>
+    <setting id="last_update_warning" visible="false" type="text" default=""/>
+  </category>
+  <category label="32120">
     <setting label="32105" type="lsep"/>
     <setting id="live_preview_for_icon" type="bool" label="32106" default="false"/>
     <setting id="live_show_in_label" type="bool" label="32107" default="false"/>
     <setting id="channel_name_in_stream_title" type="bool" label="32104" default="false"/>
     <setting id="ad_tries" type="number" label="32109" default="2"/>
+  </category>
 </settings>

@@ -30,3 +30,7 @@ v0.2.7:
 - fix error with dates and times of episodes on "OSMC"
 v0.3.0:
 - update to new API
+v0.4.0:
+- fixed requests, if there updates to JOYN, this Addon should still work
+- check for JOYN Updates on startup, to warn the user, that there might be problems
+- Plus+ content can set to be hidden. Playback of this content is not possible, because Logins are not supported yet.

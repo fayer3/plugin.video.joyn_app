@@ -85,7 +85,17 @@ setContent(plugin.handle, 'tvshows')
 
 @plugin.route('/')
 def index():
-    content = json.loads(get_url(ids.overview_url, critical = True))
+    check = kodiutils.get_setting_as_int('update_check')
+    if check < 2:
+        content = get_url(ids.joyn_update_url, key=False)
+        if content:
+            content = json.loads(content)
+            if 'updateAlert' in content and content['updateAlert']['active'] == True and content['updateAlert']['allowAppStart'] == False:
+                if check == 1 or kodiutils.get_setting('last_update_warning') != ids.joyn_version:
+                    xbmcgui.Dialog().ok(kodiutils.get_string(32019), kodiutils.get_string(32020))
+                    kodiutils.set_setting('last_update_warning', ids.joyn_version)
+    #content = json.loads(get_url(ids.overview_url, critical = True))
+    content = json.loads(post_url(ids.post_url, ids.post_request.format(variables=ids.overview_variables,query = ids.overview_query), key = True, json = True, critical = True))
     for item in content['data']['page']['blocks']:
         if item['__typename'] != 'ResumeLane' and item['__typename'] != 'BookmarkLane' :
             name = 'Folder'
@@ -109,7 +119,8 @@ def index():
 def search():
     query = xbmcgui.Dialog().input(kodiutils.get_string(32014))
     if query != '':
-        content = json.loads(get_url(ids.search_url.format(search=quote(query)), critical = True))
+        #content = json.loads(get_url(ids.search_url.format(search=quote(query)), critical = True))
+        content = json.loads(post_url(ids.post_url, ids.post_request.format(variables=ids.search_variables.format(search=query),query = ids.search_query), key = True, json = True, critical = True))
         if('data' in content and 'search' in content['data'] and 'results' in content['data']['search']):
             add_from_fetch(content['data']['search']['results'])
     endOfDirectory(plugin.handle)
@@ -226,7 +237,8 @@ def show_info():
 def show_fetch(fetch_id, type):
     i = 0
     while True:
-        content = json.loads(get_url(ids.fetch_url.format(blockId=fetch_id, offset = ids.offset*i), critical=True))
+        #content = json.loads(get_url(ids.fetch_url.format(blockId=fetch_id, offset = ids.offset*i), critical=True))
+        content = json.loads(post_url(ids.post_url, ids.post_request.format(variables=ids.fetch_variables.format(blockId=fetch_id, offset = ids.offset*i), query = ids.fetch_query), key = True, json = True, critical=False))
         if('data' in content and 'block' in content['data'] and 'assets' in content['data']['block']):
             if content['data']['block']['__typename'] == 'LiveLane':
                 add_livestreams();
@@ -250,9 +262,11 @@ def add_from_fetch(content):
             add_livestream(asset)
         elif asset['__typename'] == 'Compilation':
             add_compilation(asset)
+        elif asset['__typename'] == 'Movie':
+            add_movie(asset)
         else:
-            kodiutils.notification("ERROR", "unkown type " + asset['__typename'])
-            log("unkown type " + asset['__typename'])
+            kodiutils.notification("ERROR", "unknown type " + asset['__typename'])
+            log("unknown type " + asset['__typename'])
             log(json.dumps(asset))
 
 def add_series(asset):
@@ -260,6 +274,12 @@ def add_series(asset):
     name = asset['title']
     if asset['tagline']:
         name += u': ' + asset['tagline']
+    if len(asset['licenseTypes']) == 1 and 'SVOD' in asset['licenseTypes']:
+        svod = kodiutils.get_setting_as_int('svod')
+        if svod == 2:
+            return
+        if svod == 0:
+            name = u'[PLUS+] ' + name
     listitem = ListItem(name)
     # get images
     icon=''
@@ -301,7 +321,8 @@ def add_tvchannel(asset):
 def add_compilation(asset):
     listitem = ListItem(asset['title'])
     description = u''
-    details = json.loads(post_url(ids.base_url, ids.compilation_details_post.format(id = asset['id']), key = True, json = True, critical=False))
+    details = json.loads(post_url(ids.post_url, ids.post_request.format(variables=ids.compilation_details_variables.format(id = asset['id']), query = ids.compilation_details_query), key = True, json = True, critical=False))
+    #details = json.loads(post_url(ids.post_url, ids.compilation_details_post.format(id = asset['id']), key = True, json = True, critical=False))
     if details and 'data' in details and 'compilation' in details['data'] and 'description' in details['data']['compilation']:
         description = details['data']['compilation']['description']
     
@@ -386,7 +407,8 @@ def add_livestream(asset):
 def add_livestreams():
     livestreams = []
 
-    content = json.loads(get_url(ids.livestream_url, critical=True))
+    #content = json.loads(get_url(ids.livestream_url, critical=True))
+    content = json.loads(post_url(ids.post_url, ids.post_request.format(variables=ids.livestream_variables,query = ids.livestream_query), key = True, json = True, critical = True))
     for item in content['data']['brands']:
         if not 'livestream' in item or item['livestream'] == None:
             continue
@@ -464,15 +486,55 @@ def add_livestreams():
 
     addDirectoryItems(plugin.handle, livestreams)
 
+def add_movie(asset):
+    name = ''
+    name = asset['title']
+    if asset['tagline']:
+        name += u': ' + asset['tagline']
+    if len(asset['licenseTypes']) == 1 and 'SVOD' in asset['licenseTypes']:
+        svod = kodiutils.get_setting_as_int('svod')
+        if svod == 2:
+            return
+        if svod == 0:
+            name = u'[PLUS+] ' + name
+    listitem = ListItem(name)
+    # get images
+    icon=''
+    poster = ''
+    fanart = ''
+    thumbnail = ''
+    for image in asset['images']:
+        if image['type'] == 'PRIMARY':
+            thumbnail = ids.image_url.format(image['url'])
+        elif image['type'] == 'ART_LOGO':
+            icon = ids.image_url.format(image['url'])
+        elif image['type'] == 'HERO_LANDSCAPE':
+            fanart = ids.image_url.format(image['url'])
+        elif image['type'] == 'HERO_PORTRAIT':
+            poster = ids.image_url.format(image['url'])
+    if not poster and thumbnail:
+        poster = thumbnail
+    if not fanart and thumbnail:
+        fanart = thumbnail
+    if not fanart and thumbnail:
+        icon = thumbnail
+    listitem.setArt({'icon': icon, 'thumb': thumbnail, 'poster': poster, 'fanart': fanart})
+    listitem.setInfo(type='Video', infoLabels={'Title': name, 'Plot': asset['description'], 'TvShowTitle': name})
+    listitem.setProperty('IsPlayable', 'true')
+    listitem.addContextMenuItems([('Queue', 'Action(Queue)')])
+    addDirectoryItem(plugin.handle, plugin.url_for(
+        play_movie, movie_id=asset['id']), listitem)
 
 @plugin.route('/channel/id=<channel_path>')
 def show_channel(channel_path):
     current = 0
-    content = json.loads(get_url(ids.channel_url.format(channelpath=channel_path, offset=0), critical=True))
+    #content = json.loads(get_url(ids.channel_url.format(channelpath=channel_path, offset=0), critical=True))
+    content = json.loads(post_url(ids.post_url, ids.post_request.format(variables=ids.channel_variables.format(channelpath=unquote(channel_path), offset=0),query = ids.channel_query), key = True, json = True, critical = True))
     if('data' in content and 'page' in content['data'] and 'assets' in content['data']['page']):
         add_from_fetch(content['data']['page']['assets'])
         while len(content['data']['page']['assets']) == ids.offset:
-            content = json.loads(get_url(ids.channel_url.format(channelpath=channel_path, offset=ids.offset*current), critical=True))
+            #content = json.loads(get_url(ids.channel_url.format(channelpath=channel_path, offset=ids.offset*current), critical=True))
+            content = json.loads(post_url(ids.post_url, ids.post_request.format(variables=ids.channel_variables.format(channelpath=unquote(channel_path), offset=0),query = ids.channel_query), key = True, json = True, critical = True))
             if('data' in content and 'page' in content['data'] and 'assets' in content['data']['page']):
                 add_from_fetch(content['data']['page']['assets'])
             else:
@@ -491,7 +553,8 @@ def show_compilation(compilation_id):
     setContent(plugin.handle, 'tvshows')
     current = 0
     while True:
-        content = json.loads(post_url(ids.base_url, ids.compilation_items_post.format(id = compilation_id, offset = ids.offset*current), key = True, json = True, critical = True))
+        content = json.loads(post_url(ids.post_url, ids.post_request.format(variables=ids.compilation_items_variables.format(id = compilation_id, offset = ids.offset*current), query = ids.compilation_items_query), key = True, json = True, critical=True))
+        #content = json.loads(post_url(ids.post_url, ids.compilation_items_post.format(id = compilation_id, offset = ids.offset*current), key = True, json = True, critical = True))
         for item in content['data']['compilation']['compilationItems']:
             if not series_name and 'compilation' in item:
                 series_name = item['compilation']['title']
@@ -559,7 +622,7 @@ def show_compilation(compilation_id):
             listitem.setInfo(type='Video', infoLabels={'Title': name, 'Plot': Note_1+description, 'Duration': item['video']['duration'], 'Date': airDATE, 'mediatype': 'episode'})
             listitem.addContextMenuItems([('Queue', 'Action(Queue)')])
             addDirectoryItem(plugin.handle,plugin.url_for(
-                play_episode, episode_id=item['video']['id']), listitem)
+                play_compilation_item, item_id=item['video']['id']), listitem)
         if len(content['data']['compilation']['compilationItems']) != ids.offset:
             break
         current += 1
@@ -575,7 +638,8 @@ def show_seasons(show_id):
     thumbnail = u''
     series_name = u''
     series_desc = u''
-    content_data = get_url(ids.series_url.format(seriesId = show_id), critical = False)
+    #content_data = get_url(ids.series_url.format(seriesId = show_id), critical = False)
+    content_data = post_url(ids.post_url, ids.post_request.format(variables=ids.series_variables.format(seriesId = show_id),query = ids.series_query), key = True, json = True, critical = True)
     if content_data:
         content = json.loads(content_data)
         series_name = content['data']['series']['title']
@@ -612,11 +676,7 @@ def show_season(season_id):
     setContent(plugin.handle, 'tvshows')
     current = 0
     while True:
-        post = True
-        content = json.loads(post_url(ids.base_url, ids.season_post_custom.format(seasonId = season_id, offset = ids.offset*current), key = True, json = True, critical = False))
-        if not content or 'errors' in content:
-            content = json.loads(get_url(ids.season_url.format(seasonId = season_id, offset = ids.offset*current), critical = True))
-            post = False
+        content = json.loads(post_url(ids.post_url, ids.post_request.format(variables=ids.season_variables.format(seasonId = season_id, offset = ids.offset*current),query = ids.season_query), key = True, json = True, critical = True))
         for item in content['data']['season']['episodes']:
             airDATE = None
             toDATE = None
@@ -653,6 +713,12 @@ def show_season(season_id):
                 if 'number' in item and item['number'] != None:
                     episode = 'Episode {0} '.format(item['number'])
                 name = u'{0}{1}{2}'.format(season, episode, name)
+            if len(item['licenseTypes']) == 1 and 'SVOD' in item['licenseTypes']:
+                svod = kodiutils.get_setting_as_int('svod')
+                if svod == 2:
+                    return
+                if svod == 0:
+                    name = u'[PLUS+] ' + name
             listitem = ListItem(name)
             # get images
             icon = u''
@@ -675,9 +741,7 @@ def show_season(season_id):
             if not icon:
                 icon = thumbnail
             listitem.setArt({'icon': icon, 'thumb': thumbnail, 'poster': poster, 'fanart': fanart})
-            description = u''
-            if post:
-                description = item['description']
+            description = item['description']
             listitem.setProperty('IsPlayable', 'true')
             listitem.setInfo(type='Video', infoLabels={'Title': name, 'Plot': Note_1+description, 'Season': item['season']['number'], 'episode': item['number'], 'Duration': item['video']['duration'], 'Date': airDATE, 'mediatype': 'episode'})
             listitem.addContextMenuItems([('Queue', 'Action(Queue)')])
@@ -711,20 +775,32 @@ def show_category(category_id):
                 listitem=listitem, isFolder=True)
     endOfDirectory(plugin.handle)
 
-@plugin.route('/episode/<episode_id>')
+@plugin.route('/video/episode/<episode_id>')
 def play_episode(episode_id):
+    content = json.loads(post_url(ids.post_url, ids.post_request.format(variables=ids.episode_variables.format(episodeId=episode_id),query = ids.episode_query), key = True, json = True, critical = True))
+    content = content['data']['episode']
+    play_video(episode_id, content['series']['id'], content['tracking']['brand'], content['video']['duration'])
+    
+@plugin.route('/video/compilation/<item_id>')
+def play_compilation_item(item_id):
+    content = json.loads(post_url(ids.post_url, ids.post_request.format(variables=ids.compilation_item_variables.format(id=item_id),query = ids.compilation_item_query), key = True, json = True, critical = True))
+    #content = json.loads(post_url(ids.post_url, ids.compilation_item_post.format(id=episode_id), key = True, json = True, critical = True))
+    content = content['data']['compilationItem']
+    play_video(item_id, content['compilation']['id'], content['tracking']['brand'], content['video']['duration'])
+    
+@plugin.route('/video/movie/<movie_id>')
+def play_movie(movie_id):
+    content = json.loads(post_url(ids.post_url, ids.post_request.format(variables=ids.movie_variables.format(id=movie_id),query = ids.movie_query), key = True, json = True, critical = True))
+    #content = json.loads(post_url(ids.post_url, ids.compilation_item_post.format(id=episode_id), key = True, json = True, critical = True))
+    content = content['data']['movie']
+    play_video(content['video']['id'], content['id'], content['tracking']['brand'], content['video']['duration'])
+    
+def play_video(video_id, tvshow_id, brand, duration):
     if LooseVersion('18.0') > LooseVersion(xbmc.getInfoLabel('System.BuildVersion')):
         log(u'version is: {0}'.format(xbmc.getInfoLabel('System.BuildVersion')))
         kodiutils.notification(u'ERROR', kodiutils.get_string(32025))
         setResolvedUrl(plugin.handle, False, ListItem('none'))
         return
-    content = json.loads(get_url(ids.episode_url.format(episodeId=episode_id), critical = True))
-    content = content['data']['episode']
-    series = content['series']
-    if content['series'] == None:
-        content = json.loads(post_url(ids.base_url, ids.compilation_item_post.format(id=episode_id), key = True, json = True, critical = True))
-        content = content['data']['compilationItem']
-        series = content['compilation']
     player_config_data = json.loads(get_url(ids.player_config_url, key = False, cache = True, critical = True))
     player_config = json.loads(base64.b64decode(xxtea.decryptHexToStringss(player_config_data['toolkit']['psf'], ids.xxtea_key)))
     nuggvars_data = get_url(ids.nuggvars_url, key = False, critical = True)
@@ -732,24 +808,21 @@ def play_episode(episode_id):
     playoutBaseUrl = psf_config['default']['vod']['playoutBaseUrl']
     entitlementBaseUrl = psf_config['default']['vod']['entitlementBaseUrl']
 
-    postdata = u'{{"access_id":"{access_id}","content_id":"{content_id}","content_type":"VOD"}}'.format(access_id = player_config['accessId'], content_id = episode_id)
+    postdata = u'{{"access_id":"{access_id}","content_id":"{content_id}","content_type":"VOD"}}'.format(access_id = player_config['accessId'], content_id = video_id)
     if kodiutils.get_setting_as_bool('fake_ip'):
         entitlement_token_data = json.loads(post_url(entitlementBaseUrl+ids.entitlement_token_url, postdata=postdata, headers={'x-api-key': psf_config['default']['vod']['apiGatewayKey'], u'x-forwarded-for': u'53.{0}.{1}.{2}'.format(random.randint(0,256), random.randint(0,256), random.randint(0,256))}, json = True, critical=True))
     else:
         entitlement_token_data = json.loads(post_url(entitlementBaseUrl+ids.entitlement_token_url, postdata=postdata, headers={u'x-api-key': psf_config['default']['vod']['apiGatewayKey']}, json = True, critical=True))
 
-    tracking = content['tracking']
-    #genres = u'["'+u'","'.join(tracking['genres'])+u'"]'
-
     nuggvars = nuggvars_data.replace('{"','').replace(',"url":""}','').replace('":','=').replace(',"','&')
 
-    clientData = base64.b64encode((ids.clientdata.format(nuggvars=nuggvars[:-1], episode_id=episode_id, duration=content['video']['duration'], brand=tracking['brand'], tvshow_id=series['id'])).encode('utf-8')).decode('utf-8')
+    clientData = base64.b64encode((ids.clientdata.format(nuggvars=nuggvars[:-1], episode_id=video_id, duration=duration, brand=brand, tvshow_id=tvshow_id)).encode('utf-8')).decode('utf-8')
     log(u'clientData: {0}'.format(clientData))
 
-    sig = u'{episode_id},{entitlement_token},{clientData}{xxtea_key_hex}'.format(episode_id=episode_id, entitlement_token=entitlement_token_data['entitlement_token'], clientData=clientData, xxtea_key_hex=codecs.encode(ids.xxtea_key.encode('utf-8'),'hex').decode('utf-8'))
+    sig = u'{episode_id},{entitlement_token},{clientData}{xxtea_key_hex}'.format(episode_id=video_id, entitlement_token=entitlement_token_data['entitlement_token'], clientData=clientData, xxtea_key_hex=codecs.encode(ids.xxtea_key.encode('utf-8'),'hex').decode('utf-8'))
     sig = hashlib.sha1(sig.encode('UTF-8')).hexdigest()
 
-    video_data_url = playoutBaseUrl+ids.video_playback_url.format(episode_id=episode_id, entitlement_token=entitlement_token_data['entitlement_token'], clientData=clientData, sig=sig)
+    video_data_url = playoutBaseUrl+ids.video_playback_url.format(episode_id=video_id, entitlement_token=entitlement_token_data['entitlement_token'], clientData=clientData, sig=sig)
 
     playitem = ListItem()
 
@@ -1096,12 +1169,14 @@ def post_url(url, postdata, headers={}, json = False, key = False, critical=Fals
     log(u'post: {0}, {1}'.format(url, headers))
     new_headers = {}
     new_headers.update(headers)
+    new_headers.update({'User-Agent': ids.user_agent})
     if json:
         new_headers.update({'Content-Type': 'application/json; charset=utf-8'})
     if key:
+        new_headers.update({'Accept-Encoding': 'gzip'})
         new_headers.update({'x-api-key': ids.middleware_token})
         new_headers.update({'Joyn-Platform': 'android'})
-        new_headers.update({'Joyn-Client-Version': ids.joyn_version})
+        #new_headers.update({'Joyn-Client-Version': ids.joyn_version})
     try:
         request = urlopen(Request(url, headers=new_headers, data=postdata.encode('utf-8')))
     except HTTPError as e:
@@ -1110,8 +1185,8 @@ def post_url(url, postdata, headers={}, json = False, key = False, critical=Fals
             log(u'(getUrl) ERROR - ERROR - ERROR : ########## {0} === {1} === {2} ##########'.format(url, postdata, failure))
         elif hasattr(e, 'reason'):
             log(u'(getUrl) ERROR - ERROR - ERROR : ########## {0} === {1} === {2} ##########'.format(url, postdata, failure))
+        data = u''
         try:
-            data = u''
             if e.info().get('Content-Encoding') == 'gzip':
                 # decompress content
                 buffer = StringIO(e.read())
@@ -1122,10 +1197,16 @@ def post_url(url, postdata, headers={}, json = False, key = False, critical=Fals
             log(u'Error: {0}'.format(data.decode('utf-8')))
         except:
             log(u'couldn\'t read Error content')
+            data = u''
             pass
         if critical:
             if hasattr(e, 'code') and getattr(e, 'code') == 422:
-                kodiutils.notification(u'ERROR GETTING URL', kodiutils.get_string(32003))
+                if 'ENT_AssetNotAvailableInCountry' in data.decode('utf-8'):
+                    kodiutils.notification(u'ERROR GETTING URL', kodiutils.get_string(32003))
+                elif 'ENT_BusinessModelNotSuitable' in data:
+                    kodiutils.notification(u'ERROR GETTING URL', kodiutils.get_string(32026))
+                else:
+                    kodiutils.notification(u'ERROR GETTING URL', kodiutils.get_string(32003))
             else:
                 kodiutils.notification(u'ERROR GETTING URL', failure)
             return sys.exit(0)

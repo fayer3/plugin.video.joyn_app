@@ -90,8 +90,20 @@ msgctxt "#32018"
 msgid "Available until: [COLOR chartreuse]{0:s}[/COLOR][CR][CR]"
 msgstr ""
 
+msgctxt "#32019"
+msgid "new version of JOYN available"
+msgstr ""
+
+msgctxt "#32020"
+msgid "There is a new version of JOYN available, this Addon might not support all features or might stop working."
+msgstr ""
+
 msgctxt "#32025"
 msgid "DRM content requires Kodi 18.0"
+msgstr ""
+
+msgctxt "#32026"
+msgid "Premium Content requires a Subscription"
 msgstr ""
 
 msgctxt "#32101"
@@ -128,4 +140,48 @@ msgstr ""
 
 msgctxt "#32109"
 msgid "Number of trys when getting an ad"
+msgstr ""
+
+msgctxt "#32110"
+msgid "show [PLUS+] content?"
+msgstr ""
+
+msgctxt "#32111"
+msgid "yes, add [PLUS+] to name"
+msgstr ""
+
+msgctxt "#32112"
+msgid "yes"
+msgstr ""
+
+msgctxt "#32113"
+msgid "no"
+msgstr ""
+
+msgctxt "#32114"
+msgid "warn for new versions"
+msgstr ""
+
+msgctxt "#32115"
+msgid "once"
+msgstr ""
+
+msgctxt "#32116"
+msgid "always"
+msgstr ""
+
+msgctxt "#32117"
+msgid "never"
+msgstr ""
+
+msgctxt "#32118"
+msgid "General"
+msgstr ""
+
+msgctxt "#32119"
+msgid "General settings"
+msgstr ""
+
+msgctxt "#32120"
+msgid "Live"
 msgstr ""
