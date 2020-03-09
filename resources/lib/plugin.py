@@ -561,79 +561,84 @@ def show_compilation(compilation_id):
     while True:
         content = json.loads(post_url(ids.post_url, ids.post_request.format(variables=ids.compilation_items_variables.format(id = compilation_id, offset = ids.offset*current), query = ids.compilation_items_query), key = True, json = True, critical=True))
         #content = json.loads(post_url(ids.post_url, ids.compilation_items_post.format(id = compilation_id, offset = ids.offset*current), key = True, json = True, critical = True))
-        for item in content['data']['compilation']['compilationItems']:
-            if not series_name and 'compilation' in item:
-                series_name = item['compilation']['title']
-                for image in item['compilation']['images']:
+        if 'data' in content and content['data'] != None and 'compilation' in content['data'] and content['data']['compilation'] != None and 'compilationItems' in content['data']['compilation'] and content['data']['compilation']['compilationItems'] != None:
+            for item in content['data']['compilation']['compilationItems']:
+                if not series_name and 'compilation' in item:
+                    series_name = item['compilation']['title']
+                    for image in item['compilation']['images']:
+                        if image['type'] == 'PRIMARY':
+                            series_thumbnail = ids.image_url.format(image['url'])
+                        elif image['type'] == 'ART_LOGO':
+                            series_icon = ids.image_url.format(image['url'])
+                        elif image['type'] == 'HERO_LANDSCAPE':
+                            series_fanart = ids.image_url.format(image['url'])
+                        elif image['type'] == 'HERO_PORTRAIT':
+                            series_poster = ids.image_url.format(image['url'])
+                airDATE = None
+                toDATE = None
+                airTIMES = u''
+                endTIMES = u''
+                Note_1 = u''
+                if 'startsAt' in item and item['startsAt'] != None:
+                    local_tz = tzlocal.get_localzone()
+                    airDATES = datetime(1970, 1, 1) + timedelta(seconds=int(item['startsAt']))
+                    airDATES = pytz.utc.localize(airDATES)
+                    airDATES = airDATES.astimezone(local_tz)
+                    airTIMES = airDATES.strftime('%d.%m.%Y - %H:%M')
+                    airDATE = airDATES.strftime('%d.%m.%Y')
+                
+                if 'endsAt' in item and item['endsAt'] != None:
+                    local_tz = tzlocal.get_localzone()
+                    endDATES = datetime(1970, 1, 1) + timedelta(seconds=int(item['endsAt']))
+                    endDATES = pytz.utc.localize(endDATES)
+                    endDATES = endDATES.astimezone(local_tz)
+                    endTIMES = endDATES.strftime('%d.%m.%Y - %H:%M')
+                    toDATE =  endDATES.strftime('%d.%m.%Y')
+                if airTIMES and endTIMES: 
+                    Note_1 = kodiutils.get_string(32002).format(airTIMES, endTIMES)
+                elif airTIMES: 
+                    Note_1 = kodiutils.get_string(32017).format(airTIMES)
+                elif endTIMES: 
+                    Note_1 = kodiutils.get_string(32018).format(endTIMES)
+                name = item['title']
+                listitem = ListItem(name)
+                # get images
+                icon = u''
+                poster = u''
+                fanart = u''
+                thumbnail = u''
+                for image in item['images']:
                     if image['type'] == 'PRIMARY':
-                        series_thumbnail = ids.image_url.format(image['url'])
+                        thumbnail = ids.image_url.format(image['url'])
                     elif image['type'] == 'ART_LOGO':
-                        series_icon = ids.image_url.format(image['url'])
+                        icon = ids.image_url.format(image['url'])
                     elif image['type'] == 'HERO_LANDSCAPE':
-                        series_fanart = ids.image_url.format(image['url'])
+                        fanart = ids.image_url.format(image['url'])
                     elif image['type'] == 'HERO_PORTRAIT':
-                        series_poster = ids.image_url.format(image['url'])
-            airDATE = None
-            toDATE = None
-            airTIMES = u''
-            endTIMES = u''
-            Note_1 = u''
-            if 'startsAt' in item and item['startsAt'] != None:
-                local_tz = tzlocal.get_localzone()
-                airDATES = datetime(1970, 1, 1) + timedelta(seconds=int(item['startsAt']))
-                airDATES = pytz.utc.localize(airDATES)
-                airDATES = airDATES.astimezone(local_tz)
-                airTIMES = airDATES.strftime('%d.%m.%Y - %H:%M')
-                airDATE = airDATES.strftime('%d.%m.%Y')
-            
-            if 'endsAt' in item and item['endsAt'] != None:
-                local_tz = tzlocal.get_localzone()
-                endDATES = datetime(1970, 1, 1) + timedelta(seconds=int(item['endsAt']))
-                endDATES = pytz.utc.localize(endDATES)
-                endDATES = endDATES.astimezone(local_tz)
-                endTIMES = endDATES.strftime('%d.%m.%Y - %H:%M')
-                toDATE =  endDATES.strftime('%d.%m.%Y')
-            if airTIMES and endTIMES: 
-                Note_1 = kodiutils.get_string(32002).format(airTIMES, endTIMES)
-            elif airTIMES: 
-                Note_1 = kodiutils.get_string(32017).format(airTIMES)
-            elif endTIMES: 
-                Note_1 = kodiutils.get_string(32018).format(endTIMES)
-            name = item['title']
-            listitem = ListItem(name)
-            # get images
-            icon = u''
-            poster = u''
-            fanart = u''
-            thumbnail = u''
-            for image in item['images']:
-                if image['type'] == 'PRIMARY':
-                    thumbnail = ids.image_url.format(image['url'])
-                elif image['type'] == 'ART_LOGO':
-                    icon = ids.image_url.format(image['url'])
-                elif image['type'] == 'HERO_LANDSCAPE':
-                    fanart = ids.image_url.format(image['url'])
-                elif image['type'] == 'HERO_PORTRAIT':
-                    poster = ids.image_url.format(image['url'])
-            if not poster:
-                poster = thumbnail
-            if not fanart:
-                fanart = thumbnail
-            if not icon:
-                icon = thumbnail
-            listitem.setArt({'icon': icon, 'thumb': thumbnail, 'poster': poster, 'fanart': fanart})
-            description = u''
-            description = item['description']
-            listitem.setProperty('IsPlayable', 'true')
-            listitem.setInfo(type='Video', infoLabels={'Title': name, 'Plot': Note_1+description, 'Duration': item['video']['duration'], 'Date': airDATE, 'mediatype': 'episode'})
-            listitem.addContextMenuItems([('Queue', 'Action(Queue)')])
-            addDirectoryItem(plugin.handle,plugin.url_for(
-                play_compilation_item, item_id=item['video']['id']), listitem)
-        if len(content['data']['compilation']['compilationItems']) != ids.offset:
+                        poster = ids.image_url.format(image['url'])
+                if not poster:
+                    poster = thumbnail
+                if not fanart:
+                    fanart = thumbnail
+                if not icon:
+                    icon = thumbnail
+                listitem.setArt({'icon': icon, 'thumb': thumbnail, 'poster': poster, 'fanart': fanart})
+                description = u''
+                description = item['description']
+                listitem.setProperty('IsPlayable', 'true')
+                listitem.setInfo(type='Video', infoLabels={'Title': name, 'Plot': Note_1+description, 'Duration': item['video']['duration'], 'Date': airDATE, 'mediatype': 'episode'})
+                listitem.addContextMenuItems([('Queue', 'Action(Queue)')])
+                addDirectoryItem(plugin.handle,plugin.url_for(
+                    play_compilation_item, item_id=item['video']['id']), listitem)
+            if len(content['data']['compilation']['compilationItems']) != ids.offset:
+                break
+        else:
+            listitem = ListItem(kodiutils.get_string(32130))
+            addDirectoryItem(plugin.handle, '', listitem, False)
             break
         current += 1
     add_favorites_folder(plugin.url_for(show_compilation, compilation_id),
-        series_name, '', icon, poster, thumbnail, fanart)
+        series_name, '', series_icon, series_poster, series_thumbnail, series_fanart)
     endOfDirectory(plugin.handle)
 
 @plugin.route('/seasons/id=<show_id>')

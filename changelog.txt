@@ -34,3 +34,7 @@ v0.4.0:
 - fixed requests, if there updates to JOYN, this Addon should still work
 - check for JOYN Updates on startup, to warn the user, that there might be problems
 - Plus+ content can set to be hidden. Playback of this content is not possible, because Logins are not supported yet.
+v0.4.1:
+- fix typo when showing livestreams without EPG
+- update request to joyn app 5.3.1
+- show empty folder when favorite is not available any more

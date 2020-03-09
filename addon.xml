@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<addon id="plugin.video.joyn_app" name="Joyn" version="0.4.0" provider-name="fayer3">
+<addon id="plugin.video.joyn_app" name="Joyn" version="0.4.1" provider-name="fayer3">
     <requires>
         <import addon="xbmc.python" version="2.25.0"/>
         <import addon="script.module.routing" version="0.2.0"/>
@@ -29,6 +29,10 @@
 - Abfragen repariert, bei einem Update, sollte das Addon trotzdem weiter funktionieren
 - Addon checkt nun, ob es Updates von JOYN gibt, und warnt den Benutzer, dass es Probleme geben könnte.
 - Plus+ Inhalte können verborgen werden. Abspielen funktioniert nicht, weil momentan keine Logins unterstützt werden.
+0.4.1:
+- schreibfehler ausgebessert, der das anzeigen von livestreams ohne EPG verhindert hat.
+- Serveranfragen nun equivalent zu joyn Android app 5.3.1
+- wenn ein Favorit nun nicht mehr verfügbar ist, wird nun ein leerer Ordner angezeigt.
         </news>
         <assets>
             <icon>resources/icon.png</icon>
