@@ -97,7 +97,7 @@ def index():
     #content = json.loads(get_url(ids.overview_url, critical = True))
     content = json.loads(post_url(ids.post_url, ids.post_request.format(variables=ids.overview_variables,query = ids.overview_query), key = True, json = True, critical = True))
     for item in content['data']['page']['blocks']:
-        if item['__typename'] != 'ResumeLane' and item['__typename'] != 'BookmarkLane' :
+        if item['__typename'] != 'ResumeLane' and item['__typename'] != 'BookmarkLane' and item['__typename'] != 'RecoForYouLane':
             name = 'Folder'
             if 'headline' in item:
                 name = item['headline']
@@ -321,11 +321,14 @@ def add_tvchannel(asset):
 def add_compilation(asset):
     listitem = ListItem(asset['title'])
     description = u''
-    details = json.loads(post_url(ids.post_url, ids.post_request.format(variables=ids.compilation_details_variables.format(id = asset['id']), query = ids.compilation_details_query), key = True, json = True, critical=False))
-    #details = json.loads(post_url(ids.post_url, ids.compilation_details_post.format(id = asset['id']), key = True, json = True, critical=False))
-    if details and 'data' in details and 'compilation' in details['data'] and 'description' in details['data']['compilation']:
-        description = details['data']['compilation']['description']
-    
+    if 'description' in asset and asset['description'] != None:
+        description = asset['description']
+    else:
+        details = json.loads(post_url(ids.post_url, ids.post_request.format(variables=ids.compilation_details_variables.format(id = asset['id']), query = ids.compilation_details_query), key = True, json = True, critical=False))
+        #details = json.loads(post_url(ids.post_url, ids.compilation_details_post.format(id = asset['id']), key = True, json = True, critical=False))
+        if details and 'data' in details and 'compilation' in details['data'] and 'description' in details['data']['compilation']:
+            description = details['data']['compilation']['description']
+        
     # get images
     icon=''
     poster = ''
@@ -447,7 +450,7 @@ def add_livestreams():
                         art.update({'fanart': ids.image_url.format(image['url'])})
                         art.update({'thumb': ids.image_url.format(image['url'])})
         else:
-            brand = title['title']
+            brand = item['title']
             infoLabels.update({'title': brand})
             infoLabels.update({'tvShowTitle': brand})
 
@@ -518,8 +521,11 @@ def add_movie(asset):
         fanart = thumbnail
     if not fanart and thumbnail:
         icon = thumbnail
+    description = ''
+    if 'description' in asset and asset['description'] != None:
+        description = asset['description']
     listitem.setArt({'icon': icon, 'thumb': thumbnail, 'poster': poster, 'fanart': fanart})
-    listitem.setInfo(type='Video', infoLabels={'Title': name, 'Plot': asset['description'], 'TvShowTitle': name})
+    listitem.setInfo(type='Video', infoLabels={'Title': name, 'Plot': description, 'TvShowTitle': name, 'mediatype': 'movie'})
     listitem.setProperty('IsPlayable', 'true')
     listitem.addContextMenuItems([('Queue', 'Action(Queue)')])
     addDirectoryItem(plugin.handle, plugin.url_for(
@@ -642,31 +648,36 @@ def show_seasons(show_id):
     content_data = post_url(ids.post_url, ids.post_request.format(variables=ids.series_variables.format(seriesId = show_id),query = ids.series_query), key = True, json = True, critical = True)
     if content_data:
         content = json.loads(content_data)
-        series_name = content['data']['series']['title']
-        series_desc = content['data']['series']['description']
-        for image in content['data']['series']['images']:
-            if image['type'] == 'PRIMARY':
-                thumbnail = ids.image_url.format(image['url'])
-            elif image['type'] == 'ART_LOGO':
-                icon = ids.image_url.format(image['url'])
-            elif image['type'] == 'HERO_LANDSCAPE':
-                fanart = ids.image_url.format(image['url'])
-            elif image['type'] == 'HERO_PORTRAIT':
-                poster = ids.image_url.format(image['url'])
-        if not poster and thumbnail:
-            poster = thumbnail
-        if not fanart and thumbnail:
-            fanart = thumbnail
-        if not icon and thumbnail:
-            icon = thumbnail
-        for season in content['data']['series']['seasons']:
-            name = u'Staffel {0}'.format(season['number'])
-            listitem = ListItem(name)
+        if 'series' in content['data'] and content['data']['series'] != None:
+            series_name = content['data']['series']['title']
+            series_desc = content['data']['series']['description']
+            for image in content['data']['series']['images']:
+                if image['type'] == 'PRIMARY':
+                    thumbnail = ids.image_url.format(image['url'])
+                elif image['type'] == 'ART_LOGO':
+                    icon = ids.image_url.format(image['url'])
+                elif image['type'] == 'HERO_LANDSCAPE':
+                    fanart = ids.image_url.format(image['url'])
+                elif image['type'] == 'HERO_PORTRAIT':
+                    poster = ids.image_url.format(image['url'])
+            if not poster and thumbnail:
+                poster = thumbnail
+            if not fanart and thumbnail:
+                fanart = thumbnail
+            if not icon and thumbnail:
+                icon = thumbnail
+            for season in content['data']['series']['seasons']:
+                name = u'Staffel {0}'.format(season['number'])
+                listitem = ListItem(name)
+                # get images
+                listitem.setArt({'icon': icon, 'thumb': thumbnail, 'poster': poster, 'fanart': fanart})
+                listitem.setInfo(type='Video', infoLabels={'Title': name, 'Plot': series_desc, 'TvShowTitle': series_name})
+                addDirectoryItem(plugin.handle,plugin.url_for(
+                    show_season, season_id=season['id']), listitem, True)
+        else:
+            listitem = ListItem(kodiutils.get_string(32130))
             # get images
-            listitem.setArt({'icon': icon, 'thumb': thumbnail, 'poster': poster, 'fanart': fanart})
-            listitem.setInfo(type='Video', infoLabels={'Title': name, 'Plot': series_desc, 'TvShowTitle': series_name})
-            addDirectoryItem(plugin.handle,plugin.url_for(
-                show_season, season_id=season['id']), listitem, True)
+            addDirectoryItem(plugin.handle, '', listitem, False)
     add_favorites_folder(plugin.url_for(show_seasons, show_id),
         series_name, series_desc, icon, poster, thumbnail, fanart)
     endOfDirectory(plugin.handle)

@@ -182,3 +182,7 @@ msgstr "Allgemeine Einstellungen"
 msgctxt "#32120"
 msgid "Live"
 msgstr ""
+
+msgctxt "#32130"
+msgid "No longer available"
+msgstr "Nicht mehr verfügbar"
