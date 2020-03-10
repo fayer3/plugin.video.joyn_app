@@ -106,6 +106,18 @@ msgctxt "#32026"
 msgid "Premium Content requires a Subscription"
 msgstr ""
 
+msgctxt "#32030"
+msgid "No longer available"
+msgstr ""
+
+msgctxt "#32031"
+msgid "Waiting for commercial completion."
+msgstr ""
+
+msgctxt "#32032"
+msgid "You need to wait for the completion of a commercial.[CR][CR]The stream should start in [B]{seconds}[/B] seconds."
+msgstr ""
+
 msgctxt "#32101"
 msgid "Debug"
 msgstr ""
@@ -184,8 +196,4 @@ msgstr ""
 
 msgctxt "#32120"
 msgid "Live"
-msgstr ""
-
-msgctxt "#32130"
-msgid "No longer available"
 msgstr ""

@@ -106,6 +106,18 @@ msgctxt "#32026"
 msgid "Premium Content requires a Subscription"
 msgstr "Premium Inhalte benötigen eine Mitgliedschaft"
 
+msgctxt "#32030"
+msgid "No longer available"
+msgstr "Nicht mehr verfügbar"
+
+msgctxt "#32031"
+msgid "Waiting for commercial completion."
+msgstr "Warten bis der Werbespot vorbei ist."
+
+msgctxt "#32032"
+msgid "You need to wait for the completion of a commercial.[CR][CR]The stream should start in [B]{seconds}[/B] seconds."
+msgstr "Du musst warten bis der Werbespot vorbei ist.[CR][CR]Der Stream sollte in [B]{seconds}[/B] Sekunden starten."
+
 msgctxt "#32102"
 msgid "number of simultanious network requests"
 msgstr "Anzahl an gleichzeitigen Netzwerkanfragen"
@@ -170,7 +182,6 @@ msgctxt "#32117"
 msgid "never"
 msgstr "niemals"
 
-
 msgctxt "#32118"
 msgid "General"
 msgstr "Allgemein"
@@ -182,7 +193,3 @@ msgstr "Allgemeine Einstellungen"
 msgctxt "#32120"
 msgid "Live"
 msgstr ""
-
-msgctxt "#32130"
-msgid "No longer available"
-msgstr "Nicht mehr verfügbar"

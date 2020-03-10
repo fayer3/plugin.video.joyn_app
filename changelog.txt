@@ -38,3 +38,6 @@ v0.4.1:
 - fix typo when showing livestreams without EPG
 - update request to joyn app 5.3.1
 - show empty folder when favorite is not available any more
+v0.4.2:
+- show a timer if a livestream requires a commercial to be watched
+- Debug Log is now automatically active if Kodi 'debug logging' is active

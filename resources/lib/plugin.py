@@ -633,7 +633,7 @@ def show_compilation(compilation_id):
             if len(content['data']['compilation']['compilationItems']) != ids.offset:
                 break
         else:
-            listitem = ListItem(kodiutils.get_string(32130))
+            listitem = ListItem(kodiutils.get_string(32030))
             addDirectoryItem(plugin.handle, '', listitem, False)
             break
         current += 1
@@ -680,7 +680,7 @@ def show_seasons(show_id):
                 addDirectoryItem(plugin.handle,plugin.url_for(
                     show_season, season_id=season['id']), listitem, True)
         else:
-            listitem = ListItem(kodiutils.get_string(32130))
+            listitem = ListItem(kodiutils.get_string(32030))
             # get images
             addDirectoryItem(plugin.handle, '', listitem, False)
     add_favorites_folder(plugin.url_for(show_seasons, show_id),
@@ -936,18 +936,29 @@ def play_live(stream_id, brand, _try=1):
     
     video_url = video_data['videoUrl']
     video_url_data = u''
-    if 'vmap'in video_data and video_data['vmap']:
+    if 'vmap'in video_data and video_data['vmap'] != None:
         #got add, extract mpd
         log(u'stream with add: {0}'.format(video_url))
         #return
         video_url_data = get_url(video_url, headers={'User-Agent': ids.video_useragent}, key = False, critical = True)
         if 'BaseURL' not in video_url_data and _try < kodiutils.get_setting_as_int('ad_tries'):
+            log(u'No BaseURL in stream. try: {0}'.format(_try))
             play_live(stream_id, brand, _try+1)
             return
         if 'BaseURL' not in video_url_data:
-            kodiutils.notification(u'ERROR', kodiutils.get_string(32005))
-            setResolvedUrl(plugin.handle, False, ListItem('none'))
-            return
+            log(u'No BaseURL in stream. try limit of \'{0}\' reached. Show commercial timer'.format(kodiutils.get_setting_as_int('ad_tries')))
+            success = False
+            add_data = get_url(video_data['vmap'], headers={'User-Agent': ids.video_useragent}, key = False, critical = True)
+            add_duration = re.findall('(?:yospace:AdBreak duration="|<Duration>)(.*?)(?:</Duration>|"/>)', add_data)
+            if len(add_duration) > 0:
+                duration = sum(time * int(milli) for time, milli in zip([3600000, 60000, 1000, 1], re.split('\D+', add_duration[0])))
+                if handle_wait(duration, 'title', 'text'):
+                    video_url_data = get_url(video_url, headers={'User-Agent': ids.video_useragent}, key = False, critical = True)
+                    success = 'BaseURL' in video_url_data
+            if success == False:
+                kodiutils.notification(u'ERROR', kodiutils.get_string(32005))
+                setResolvedUrl(plugin.handle, False, ListItem('none'))
+                return
     else:
         video_url_data = get_url(video_url, headers={'User-Agent': ids.video_useragent}, key = False, critical = True)
     
@@ -1238,11 +1249,29 @@ def post_url(url, postdata, headers={}, json = False, key = False, critical=Fals
         data = request.read()
     return data.decode('utf-8')
 
+def handle_wait(time, title, text):
+    log(u'waiting for {0} seconds'.format(time/1000.0))
+    progress = xbmcgui.DialogProgress()
+    ret = progress.create(kodiutils.get_string(32031))
+    millisecs = 0
+    percent = 0
+    cancelled = False
+    while millisecs < time:
+        percent = millisecs * 100 / time
+        time_left = str((time - millisecs) / 1000.0)
+        progress.update(percent, kodiutils.get_string(32032).format(seconds=time_left))
+        xbmc.sleep(100)
+        millisecs += 100
+        if (progress.iscanceled()):
+            return False
+    progress.close()
+    return True
+
 def run():
     plugin.run()
 
 def log(info):
-    if kodiutils.get_setting_as_bool('debug'):
+    if kodiutils.get_setting_as_bool('debug') or xbmc.getCondVisibility('System.GetBool(debug.showloginfo)'):
         try:
             logger.warning(info)
         except UnicodeDecodeError:
