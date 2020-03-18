@@ -53,11 +53,11 @@ except ImportError:
 
 try:
     from urllib.request import Request, urlopen
-    from urllib.error import HTTPError
+    from urllib.error import HTTPError, URLError
     from urllib.parse import quote, unquote
 except ImportError:
     from urllib import quote, unquote
-    from urllib2 import Request, urlopen, HTTPError
+    from urllib2 import Request, urlopen, HTTPError, URLError
 
 try:
     from html.parser import HTMLParser
@@ -819,7 +819,7 @@ def play_video(video_id, tvshow_id, brand, duration):
         return
     player_config_data = json.loads(get_url(ids.player_config_url, key = False, cache = True, critical = True))
     player_config = json.loads(base64.b64decode(xxtea.decryptHexToStringss(player_config_data['toolkit']['psf'], ids.xxtea_key)))
-    nuggvars_data = get_url(ids.nuggvars_url, key = False, critical = True)
+    nuggvars_data = get_url(ids.nuggvars_url, key = False, critical = False)
     psf_config = json.loads(get_url(ids.psf_config_url, key = False, critical = True))
     playoutBaseUrl = psf_config['default']['vod']['playoutBaseUrl']
     entitlementBaseUrl = psf_config['default']['vod']['entitlementBaseUrl']
@@ -1158,9 +1158,9 @@ def get_url(url, headers={}, key=True, cache=False, critical=False):
             return ids.get_config_cache(url)
         failure = str(e)
         if hasattr(e, 'code'):
-            log(u'(getUrl) ERROR - ERROR - ERROR : ########## {0} === {1} ##########'.format(url, failure))
+            log(u'(getUrl) ERROR - ERROR - ERROR : ########## url:{0} === error:{1} === code:{2} ##########'.format(url, failure, e.code))
         elif hasattr(e, 'reason'):
-            log(u'(getUrl) ERROR - ERROR - ERROR : ########## {0} === {1} ##########'.format(url, failure))
+            log(u'(getUrl) ERROR - ERROR - ERROR : ########## url:{0} === error:{1} === reason:{2} ##########'.format(url, failure, e.reason))
         try:
             data = u''
             if e.info().get('Content-Encoding') == 'gzip':
@@ -1179,7 +1179,13 @@ def get_url(url, headers={}, key=True, cache=False, critical=False):
             return sys.exit(0)
         else:
             return u''
-
+    except URLError as e:
+        log(u'(getUrl) ERROR - ERROR - ERROR : ########## url:{0} === error:{1} === reason:{2} ##########'.format(url, str(e), e.reason))
+        if critical:
+            kodiutils.notification('ERROR GETTING URL', str(e))
+            return sys.exit(0)
+        else:
+            return u''
     if request.info().get('Content-Encoding') == 'gzip':
         # decompress content
         buffer = StringIO(request.read())

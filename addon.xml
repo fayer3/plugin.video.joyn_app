@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<addon id="plugin.video.joyn_app" name="Joyn" version="0.4.2" provider-name="fayer3">
+<addon id="plugin.video.joyn_app" name="Joyn" version="0.4.3" provider-name="fayer3">
     <requires>
         <import addon="xbmc.python" version="2.25.0"/>
         <import addon="script.module.routing" version="0.2.0"/>
@@ -36,6 +36,8 @@
 0.4.2:
 - zeige einen Timer, wenn ein Livestream das anschauen eines Werbespots verlangt.
 - Debug Log nun automatisch aktiviert, wenn von Kodi 'Debug-Logging' aktiv ist.
+0.4.3:
+- versuche videos abzuspielen, auch wenn einige nicht wichtige Anfragen, wegen SSL Fehlern, fehlschlagen.
         </news>
         <assets>
             <icon>resources/icon.png</icon>
