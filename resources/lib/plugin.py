@@ -127,100 +127,54 @@ def search():
 
 @plugin.route('/epg')
 def show_epg():
-    content = json.loads(get_url(ids.epg_now_url, key = False, headers = {'key':ids.middleware_token}, critical = True))
+    content = json.loads(post_url(ids.post_url, ids.post_request.format(variables=ids.livestream_variables,query = ids.livestream_query), key = True, json = True, critical = True))
+    #content = json.loads(get_url(ids.epg_now_url, key = False, headers = {'key':ids.middleware_token}, critical = True))
     xbmcplugin.addSortMethod(plugin.handle, xbmcplugin.SORT_METHOD_LABEL)
     #log(json.dumps(content))
-    for channel in content['response']['data']:
-        listitem = get_epg_listitem(channel, channel_in_label = True)
-        addDirectoryItem(plugin.handle,plugin.url_for(
-            show_channel_epg, channel_id=channel['channelId']), listitem, True)
-    endOfDirectory(plugin.handle)
-
-@plugin.route('/epg/id=<channel_id>')
-def show_channel_epg(channel_id):
-    addDirectoryItem(plugin.handle,plugin.url_for(
-        show_channel_epg_past, channel_id=channel_id), ListItem(kodiutils.get_string(32016)), True)
-    dt_utcnow = datetime.utcnow().date()
-    content = json.loads(get_url(ids.epg_channel_url.format(channel = channel_id)+'&from='+quote(dt_utcnow.strftime('%Y-%m-%d %H:%M:%S')),key = False, headers = {'key':ids.middleware_token}, critical = True))
-    #log(json.dumps(content))
-    if len(content['response']['data']) > 0:
-        date_max = datetime.fromtimestamp(content['response']['data'][len(content['response']['data'])-1]['startTime'])
-        for n in range(int ((date_max.date() - dt_utcnow).days+1)):
-            cur_date = (dt_utcnow + timedelta(days=n))
+    for channel in content['data']['brands']:
+        if 'livestream' in channel and channel['livestream'] != None:
+            listitem = ListItem(channel['title'])
+            logo = ''
+            if 'logo' in channel and channel['logo'] != None:
+                logo = ids.image_url.format(channel['logo']['url'])
+            listitem.setArt({'icon': logo, 'thumb': logo, 'poster': logo})
             addDirectoryItem(plugin.handle,plugin.url_for(
-                show_channel_epg_date, channel_id=channel_id, day=cur_date.day, month=cur_date.month, year=cur_date.year), ListItem(kodiutils.get_string(32015).format(cur_date.strftime('%Y-%m-%d'))), True)
-
+                show_channel_epg, channel_id=channel['id'], offset=0), listitem, True)
     endOfDirectory(plugin.handle)
 
-@plugin.route('/epg/id=<channel_id>/past')
-def show_channel_epg_past(channel_id):
-    dt_utcnow = datetime.utcnow().date()
-    content = json.loads(get_url(ids.epg_channel_url.format(channel = channel_id)+'&to='+quote(dt_utcnow.strftime('%Y-%m-%d %H:%M:%S')),key = False, headers = {'key':ids.middleware_token}, critical = True))
-    #log(json.dumps(content))
-    if len(content['response']['data']) > 0:
-        date_min = datetime.fromtimestamp(content['response']['data'][0]['startTime'])
-        for n in range(int ((dt_utcnow - date_min.date()).days)):
-            cur_date = (dt_utcnow - timedelta(days=n))
-            addDirectoryItem(plugin.handle,plugin.url_for(
-                show_channel_epg_date, channel_id=channel_id, day=cur_date.day, month=cur_date.month, year=cur_date.year), ListItem(kodiutils.get_string(32015).format(cur_date.strftime('%Y-%m-%d'))), True)
+@plugin.route('/epg/id=<channel_id>/offset=<offset>')
+def show_channel_epg(channel_id, offset):
+    content = json.loads(post_url(ids.post_url, ids.post_request.format(variables=ids.epg_variables.format(brandId = channel_id, offset = offset),query = ids.epg_query), key = True, json = True, critical = True))
+    if 'livestream' in content['data']['brand'] and content['data']['brand']['livestream'] != None and 'epg' in content['data']['brand']['livestream'] and content['data']['brand']['livestream']['epg'] != None and len(content['data']['brand']['livestream']['epg']) >0:
+        for epg in content['data']['brand']['livestream']['epg']:
+            addDirectoryItem(plugin.handle, plugin.url_for(show_info), get_epg_listitem(epg, start_in_label = True))
+        addDirectoryItem(plugin.handle, plugin.url_for(show_channel_epg, channel_id = channel_id, offset = int(offset)+25), ListItem(kodiutils.get_string(32033)),True)
+    else:
+        addDirectoryItem(plugin.handle, '', ListItem(kodiutils.get_string(32034)))
     endOfDirectory(plugin.handle)
 
-@plugin.route('/epg/id=<channel_id>/day=<day>/month=<month>/year=<year>')
-def show_channel_epg_date(channel_id, day, month, year):
-    log('EPG for channel "{0}" and date "{1}.{2}.{3}"'.format(channel_id, day, month, year))
-
-    cur_date = date(int(year), int(month), int(day))
-
-    content = json.loads(get_url(ids.epg_channel_url.format(channel = channel_id)+'&from='+quote(cur_date.strftime('%Y-%m-%d %H:%M:%S'))+'&to='+quote((cur_date+timedelta(days=1)).strftime('%Y-%m-%d %H:%M:%S')),key = False, headers = {'key':ids.middleware_token}, critical = True))
-    for channel in content['response']['data']:
-        listitem = get_epg_listitem(channel, start_in_label = True)
-        addDirectoryItem(plugin.handle, plugin.url_for(show_info), listitem)
-    endOfDirectory(plugin.handle)
-
-def get_epg_listitem(channeldata, channel_in_label = False, start_in_label = False):
+def get_epg_listitem(epgdata, start_in_label = False):
     infoLabels = {}
     art = {}
-    infoLabels.update({'title': channeldata['title'] if channeldata['title'] else channeldata['tvShow']['title']})
-    infoLabels.update({'tvShowTitle': channeldata['tvShow']['title']})
-    infoLabels.update({'year': channeldata['productionYear']})
-    channelname =  channeldata['tvChannelName']
+    infoLabels.update({'title': epgdata['secondaryTitle'] if epgdata['secondaryTitle'] != None and epgdata['secondaryTitle'] != '' else epgdata['title']})
+    infoLabels.update({'tvShowTitle': epgdata['title']})
 
-    local_start_time = datetime.fromtimestamp(channeldata['startTime'])
-    local_end_time = datetime.fromtimestamp(channeldata['endTime'])
+    local_start_time = datetime.fromtimestamp(epgdata['startDate'])
+    local_end_time = datetime.fromtimestamp(epgdata['endDate'])
     plot = u'[COLOR chartreuse]{0} - {1}[/COLOR]'.format(local_start_time.strftime('%H:%M'), local_end_time.strftime('%H:%M'))
     plot += u'[CR][CR]'
-    plot = plot + channeldata['description'] if channeldata['description'] else u''
     infoLabels.update({'plot': plot})
 
-    genres = []
-    for genre in channeldata['genres']:
-        #log('genre: {0}'.format(genre))
-        #log('genres: {0}'.format(genres))
-        if genre['title'] and genre['title'] not in genres:
-            genres.append(genre['title'])
-    if len(genres) > 0:
-        infoLabels.update({'genre': ', '.join(genres)})
-
-    if len(channeldata['images']) > 0:
-        for image in channeldata['images']:
-            if image['subType'] == 'art_direction' or image['subType'] == 'logo':
+    if 'images' in epgdata and epgdata['images'] != None and len(epgdata['images']) > 0:
+        for image in epgdata['images']:
+            if image['type'] == 'LIVE_STILL':
                 art.update({'fanart': ids.image_url.format(image['url'])})
-            elif image['subType'] == 'cover':
                 art.update({'thumb': ids.image_url.format(image['url'])})
 
     infoLabels.update({'mediatype': 'episode'})
 
     label = u''
-    if channel_in_label:
-        if channelname != infoLabels.get('tvShowTitle'):
-            label = infoLabels.get('tvShowTitle') if not infoLabels.get('title') or infoLabels.get('tvShowTitle') == infoLabels.get('title') else u'[COLOR blue]{0}[/COLOR]  {1}'.format(infoLabels.get('tvShowTitle'), infoLabels.get('title'))
-            label = u'[COLOR lime]{0}[/COLOR]  {1}'.format(channelname, label)
-            if kodiutils.get_setting_as_bool('channel_name_in_stream_title'):
-                infoLabels['title'] = label
-        else:
-            label = channelname
-    else:
-        label = infoLabels.get('tvShowTitle') if not infoLabels.get('title') or infoLabels.get('tvShowTitle') == infoLabels.get('title') else u'[COLOR blue]{0}[/COLOR]  {1}'.format(infoLabels.get('tvShowTitle'), infoLabels.get('title'))
+    label = infoLabels.get('tvShowTitle') if not infoLabels.get('title') or infoLabels.get('tvShowTitle') == infoLabels.get('title') else u'[COLOR blue]{0}[/COLOR]  {1}'.format(infoLabels.get('tvShowTitle'), infoLabels.get('title'))
     if start_in_label:
         label = u'[COLOR chartreuse]{0}[/COLOR]: '.format(local_start_time.strftime('%H:%M')) + label
 
@@ -446,7 +400,7 @@ def add_livestreams():
             art.update({'icon': icon, 'thumb': icon})
             if len(epg_now['images']) > 0 and kodiutils.get_setting_as_bool('live_preview_for_icon'):
                 for image in epg_now['images']:
-                    if image['subType'] == 'LIVE_STILL':
+                    if image['type'] == 'LIVE_STILL':
                         art.update({'fanart': ids.image_url.format(image['url'])})
                         art.update({'thumb': ids.image_url.format(image['url'])})
         else:

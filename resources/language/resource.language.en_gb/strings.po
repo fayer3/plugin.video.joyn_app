@@ -118,6 +118,14 @@ msgctxt "#32032"
 msgid "You need to wait for the completion of a commercial.[CR][CR]The stream should start in [B]{seconds}[/B] seconds."
 msgstr ""
 
+msgctxt "#32033"
+msgid "more"
+msgstr ""
+
+msgctxt "#32034"
+msgid "no EPG available"
+msgstr ""
+
 msgctxt "#32101"
 msgid "Debug"
 msgstr ""

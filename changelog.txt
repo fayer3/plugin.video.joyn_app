@@ -43,3 +43,6 @@ v0.4.2:
 - Debug Log is now automatically active if Kodi 'debug logging' is active
 v0.4.3:
 - try to play videos, even if some not important requests fail, because of SSL errors.
+v0.4.4:
+- fix typo that prevented preview images for livestreams to work
+- fix EPG, but it is now limited to the next 25 entries

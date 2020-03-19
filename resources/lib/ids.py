@@ -41,6 +41,9 @@ overview_query = u'query LandingPage($path: String!){page(path: $path){__typenam
 livestream_variables = u'"first":2'
 livestream_query = u'query getEpg($first: Int!){brands{__typename id livestream{__typename id title quality epg(first: $first){__typename id startDate endDate title secondaryTitle images{__typename id accentColor type url}}}logo{__typename accentColor url}hasVodContent title}}'
 
+epg_variables = u'"first":25, "offset":{offset}, "brandId":{brandId}'
+epg_query = u'query getEpg($first: Int!, $offset: Int!, $brandId: ID!){brand(id: $brandId){__typename id livestream{__typename id title quality epg(first: $first, offset: $offset){__typename id startDate endDate title secondaryTitle images{__typename id accentColor type url}}}logo{__typename accentColor url}hasVodContent title}}'
+
 epg_url = base_url_mid + u'epg?selection=%7BtotalCount%2Cdata%7Bid%2Ctitle%2Cdescription%2CtvShow%2Ctype%2CproductionYear%2CtvChannelName%2CchannelId%2CstartTime%2CendTime%2CrepeatTime%2Cvideo%2Cgenres%7Btype%2Ctitle%7D%2Cimages%28subType%3A%22cover%2Clogo%2Cart_direction%22%29%7Burl%2CsubType%7D%7D%7D&skip=0&limit=1000&from={0}&to={1}&sortBy=startTime&sortAscending=true'
 
 epg_now_url = base_url_mid + u'epg/now?selection=%7BtotalCount%2Cdata%7Bid%2Ctitle%2Cdescription%2CtvShow%2Ctype%2CproductionYear%2CtvChannelName%2CchannelId%2CstartTime%2CendTime%2CrepeatTime%2Cvideo%2Cgenres%7Btype%2Ctitle%7D%2Cimages%28subType%3A%22cover%2Clogo%2Cart_direction%22%29%7Burl%2CsubType%7D%7D%7D&skip=0&limit=5000&sortAscending=true'

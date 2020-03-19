@@ -118,6 +118,14 @@ msgctxt "#32032"
 msgid "You need to wait for the completion of a commercial.[CR][CR]The stream should start in [B]{seconds}[/B] seconds."
 msgstr "Du musst warten bis der Werbespot vorbei ist.[CR][CR]Der Stream sollte in [B]{seconds}[/B] Sekunden starten."
 
+msgctxt "#32033"
+msgid "more"
+msgstr "mehr"
+
+msgctxt "#32034"
+msgid "no EPG available"
+msgstr "kein EPG verfügbar"
+
 msgctxt "#32102"
 msgid "number of simultanious network requests"
 msgstr "Anzahl an gleichzeitigen Netzwerkanfragen"
