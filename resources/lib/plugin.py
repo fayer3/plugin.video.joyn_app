@@ -234,6 +234,17 @@ def add_series(asset):
             return
         if svod == 0:
             name = u'[PLUS+] ' + name
+    Note_2 = u''
+    description = asset['description']
+    if 'ageRating' in asset and asset['ageRating'] != None:
+        age = asset['ageRating']['minAge']
+        if kodiutils.get_setting_as_bool('age_in_description'):
+            Note_2 += kodiutils.get_string(32037).format(age)
+    if 'copyrights' in asset and asset['copyrights'] != None and len(asset['copyrights']) > 0:
+        if kodiutils.get_setting_as_bool('copyright_in_description'):
+            Note_2 += kodiutils.get_string(32038).format(', '.join(asset['copyrights']))
+    if Note_2:
+        description = description + '[CR][CR]' + Note_2
     listitem = ListItem(name)
     # get images
     icon=''
@@ -256,7 +267,7 @@ def add_series(asset):
     if not fanart and thumbnail:
         icon = thumbnail
     listitem.setArt({'icon': icon, 'thumb': thumbnail, 'poster': poster, 'fanart': fanart})
-    listitem.setInfo(type='Video', infoLabels={'Title': name, 'Plot': asset['description'], 'TvShowTitle': name})
+    listitem.setInfo(type='Video', infoLabels={'Title': name, 'Plot': description, 'TvShowTitle': name})
     add_favorites_context_menu(listitem, plugin.url_for(
         show_seasons, show_id=asset['id']), name, asset['description'], icon, poster, thumbnail, fanart)
     addDirectoryItem(plugin.handle, plugin.url_for(
@@ -282,7 +293,17 @@ def add_compilation(asset):
         #details = json.loads(post_url(ids.post_url, ids.compilation_details_post.format(id = asset['id']), key = True, json = True, critical=False))
         if details and 'data' in details and 'compilation' in details['data'] and 'description' in details['data']['compilation']:
             description = details['data']['compilation']['description']
-        
+    Note_2 = u''
+    if 'ageRating' in asset and asset['ageRating'] != None:
+        age = asset['ageRating']['minAge']
+        if kodiutils.get_setting_as_bool('age_in_description'):
+            Note_2 += kodiutils.get_string(32037).format(age)
+    if 'copyrights' in asset and asset['copyrights'] != None and len(asset['copyrights']) > 0:
+        if kodiutils.get_setting_as_bool('copyright_in_description'):
+            Note_2 += kodiutils.get_string(32038).format(', '.join(asset['copyrights']))
+    if Note_2:
+        description = description + '[CR][CR]' + Note_2
+    
     # get images
     icon=''
     poster = ''
@@ -444,10 +465,14 @@ def add_livestreams():
     addDirectoryItems(plugin.handle, livestreams)
 
 def add_movie(asset):
+    infoLabels = {}
+    Note_2 = u''
+    infoLabels['mediatype'] = 'movie'
     name = ''
     name = asset['title']
     if asset['tagline']:
         name += u': ' + asset['tagline']
+    infoLabels['Title'] = name
     if len(asset['licenseTypes']) == 1 and 'SVOD' in asset['licenseTypes']:
         svod = kodiutils.get_setting_as_int('svod')
         if svod == 2:
@@ -475,11 +500,27 @@ def add_movie(asset):
         fanart = thumbnail
     if not fanart and thumbnail:
         icon = thumbnail
-    description = ''
+    
     if 'description' in asset and asset['description'] != None:
-        description = asset['description']
+        infoLabels['Plot'] = asset['description']
+    if 'genres' in asset and asset['genres'] != None:
+        infoLabels['genre'] = []
+        for genre in asset['genres']:
+            infoLabels['genre'].append(genre['name'])
+    if 'ageRating' in asset and asset['ageRating'] != None:
+        infoLabels['mpaa'] = asset['ageRating']['minAge']
+        if kodiutils.get_setting_as_bool('age_in_description'):
+            Note_2 += kodiutils.get_string(32037).format(infoLabels['mpaa'])
+    if 'copyrights' in asset and asset['copyrights'] != None and len(asset['copyrights']) > 0:
+        if kodiutils.get_setting_as_bool('copyright_in_description'):
+            Note_2 += kodiutils.get_string(32038).format(', '.join(asset['copyrights']))
+    if Note_2:
+        infoLabels['Plot'] = infoLabels['Plot'] + '[CR][CR]' + Note_2
+    if 'productionYear' in asset and asset['productionYear'] != None:
+        infoLabels['year'] = asset['productionYear']
+        
     listitem.setArt({'icon': icon, 'thumb': thumbnail, 'poster': poster, 'fanart': fanart})
-    listitem.setInfo(type='Video', infoLabels={'Title': name, 'Plot': description, 'TvShowTitle': name, 'mediatype': 'movie'})
+    listitem.setInfo(type='Video', infoLabels=infoLabels)
     listitem.setProperty('IsPlayable', 'true')
     listitem.addContextMenuItems([('Queue', 'Action(Queue)')])
     addDirectoryItem(plugin.handle, plugin.url_for(
@@ -533,6 +574,7 @@ def show_compilation(compilation_id):
                 airTIMES = u''
                 endTIMES = u''
                 Note_1 = u''
+                Note_2 = u''
                 if 'startsAt' in item and item['startsAt'] != None:
                     local_tz = tzlocal.get_localzone()
                     airDATES = datetime(1970, 1, 1) + timedelta(seconds=int(item['startsAt']))
@@ -578,9 +620,24 @@ def show_compilation(compilation_id):
                     icon = thumbnail
                 listitem.setArt({'icon': icon, 'thumb': thumbnail, 'poster': poster, 'fanart': fanart})
                 description = u''
-                description = item['description']
+                if 'description' in item and item['description'] != None:
+                    description = item['description']
+                age = u''
+                if 'ageRating' in item and item['ageRating'] != None:
+                    age = item['ageRating']['minAge']
+                    if kodiutils.get_setting_as_bool('age_in_description'):
+                        Note_2 += kodiutils.get_string(32037).format(age)
+                if 'compilation' in item and item['compilation'] != None and 'copyrights' in item['compilation'] and item['compilation']['copyrights'] != None and len(item['compilation']['copyrights']) > 0:
+                    if kodiutils.get_setting_as_bool('copyright_in_description'):
+                        Note_2 += kodiutils.get_string(32038).format(', '.join(item['compilation']['copyrights']))
+                if Note_2:
+                    Note_2 = '[CR][CR]'+Note_2
+                genres = []
+                if 'genres' in item and item['genres'] != None:
+                    for genre in item['genres']:
+                        genres.append(genre['name'])
                 listitem.setProperty('IsPlayable', 'true')
-                listitem.setInfo(type='Video', infoLabels={'Title': name, 'Plot': Note_1+description, 'Duration': item['video']['duration'], 'Date': airDATE, 'mediatype': 'episode'})
+                listitem.setInfo(type='Video', infoLabels={'Title': name, 'Plot': Note_1+description+Note_2, 'Duration': item['video']['duration'], 'Date': airDATE, 'mpaa': age, 'genre': genres, 'mediatype': 'episode'})
                 listitem.addContextMenuItems([('Queue', 'Action(Queue)')])
                 addDirectoryItem(plugin.handle,plugin.url_for(
                     play_compilation_item, item_id=item['video']['id']), listitem)
@@ -610,6 +667,16 @@ def show_seasons(show_id):
         if 'series' in content['data'] and content['data']['series'] != None:
             series_name = content['data']['series']['title']
             series_desc = content['data']['series']['description']
+            Note_2 = u''
+            if 'ageRating' in content['data']['series'] and content['data']['series']['ageRating'] != None:
+                age = content['data']['series']['ageRating']['minAge']
+                if kodiutils.get_setting_as_bool('age_in_description'):
+                    Note_2 += kodiutils.get_string(32037).format(age)
+            if 'copyrights' in content['data']['series'] and content['data']['series']['copyrights'] != None and len(content['data']['series']['copyrights']) > 0:
+                if kodiutils.get_setting_as_bool('copyright_in_description'):
+                    Note_2 += kodiutils.get_string(32038).format(', '.join(content['data']['series']['copyrights']))
+            if Note_2:
+                series_desc = series_desc + '[CR][CR]' + Note_2
             for image in content['data']['series']['images']:
                 if image['type'] == 'PRIMARY':
                     thumbnail = ids.image_url.format(image['url'])
@@ -633,6 +700,15 @@ def show_seasons(show_id):
                 listitem.setInfo(type='Video', infoLabels={'Title': name, 'Plot': series_desc, 'TvShowTitle': series_name})
                 addDirectoryItem(plugin.handle,plugin.url_for(
                     show_season, season_id=season['id']), listitem, True)
+            bonus_data = post_url(ids.post_url, ids.post_request.format(variables=ids.bonus_variables.format(seriesId = show_id, offset = 0),query = ids.bonus_query), key = True, json = True, critical = True)
+            if bonus_data:
+                bonus = json.loads(bonus_data)
+                if 'series' in bonus['data'] and bonus['data']['series'] != None and 'extras' in bonus['data']['series'] and bonus['data']['series']['extras'] != None and len(bonus['data']['series']['extras']) > 0:
+                    addDirectoryItem(plugin.handle,plugin.url_for(
+                        show_bonus, id=show_id), ListItem(kodiutils.get_string(32036)), True)
+            if kodiutils.get_setting_as_bool('show_recommendations'):
+                addDirectoryItem(plugin.handle,plugin.url_for(
+                    show_recommendations, id=show_id), ListItem(kodiutils.get_string(32035)), True)
         else:
             listitem = ListItem(kodiutils.get_string(32030))
             # get images
@@ -653,6 +729,7 @@ def show_season(season_id):
             airTIMES = u''
             endTIMES = u''
             Note_1 = u''
+            Note_2 = u''
             if 'airdate' in item and item['airdate'] != None:
                 local_tz = tzlocal.get_localzone()
                 airDATES = datetime(1970, 1, 1) + timedelta(seconds=int(item['airdate']))
@@ -689,6 +766,20 @@ def show_season(season_id):
                     return
                 if svod == 0:
                     name = u'[PLUS+] ' + name
+            age = u''
+            if 'ageRating' in item and item['ageRating'] != None:
+                age = item['ageRating']['minAge']
+                if kodiutils.get_setting_as_bool('age_in_description'):
+                    Note_2 += kodiutils.get_string(32037).format(age)
+            if 'series' in item and item['series'] != None and 'copyrights' in item['series'] and item['series']['copyrights'] != None and len(item['series']['copyrights']) > 0:
+                if kodiutils.get_setting_as_bool('copyright_in_description'):
+                    Note_2 += kodiutils.get_string(32038).format(', '.join(item['series']['copyrights']))
+            if Note_2:
+                Note_2 = '[CR][CR]' + Note_2
+            genres = []
+            if 'genres' in item and item['genres'] != None:
+                for genre in item['genres']:
+                    genres.append(genre['name'])
             listitem = ListItem(name)
             # get images
             icon = u''
@@ -713,13 +804,65 @@ def show_season(season_id):
             listitem.setArt({'icon': icon, 'thumb': thumbnail, 'poster': poster, 'fanart': fanart})
             description = item['description']
             listitem.setProperty('IsPlayable', 'true')
-            listitem.setInfo(type='Video', infoLabels={'Title': name, 'Plot': Note_1+description, 'Season': item['season']['number'], 'episode': item['number'], 'Duration': item['video']['duration'], 'Date': airDATE, 'mediatype': 'episode'})
+            listitem.setInfo(type='Video', infoLabels={'Title': name, 'Plot': Note_1+description+Note_2, 'Season': item['season']['number'], 'episode': item['number'], 'Duration': item['video']['duration'], 'Date': airDATE, 'mpaa': age, 'genre': genres, 'mediatype': 'episode'})
             listitem.addContextMenuItems([('Queue', 'Action(Queue)')])
             addDirectoryItem(plugin.handle,plugin.url_for(
                 play_episode, episode_id=item['video']['id']), listitem)
         if len(content['data']['season']['episodes']) != ids.offset:
             break
         current += 1
+    endOfDirectory(plugin.handle)
+
+@plugin.route('/recommendations/id=<id>')
+def show_recommendations(id):
+    content_data = post_url(ids.post_url, ids.post_request.format(variables=ids.recommendation_variables.format(id = id),query = ids.recommendation_query), key = True, json = True, critical = True)
+    if content_data:
+        content = json.loads(content_data)
+        if 'recommendationForAsset' in content['data'] and content['data']['recommendationForAsset'] != None:
+            add_from_fetch(content['data']['recommendationForAsset']['assets'])
+    endOfDirectory(plugin.handle)
+
+@plugin.route('/bonus/id=<id>')
+def show_bonus(id):
+    offset = 0
+    while True:
+        content_data = post_url(ids.post_url, ids.post_request.format(variables=ids.bonus_variables.format(seriesId = id, offset = ids.offset*offset),query = ids.bonus_query), key = True, json = True, critical = True)
+        if content_data:
+            content = json.loads(content_data)
+            if 'series' in content['data'] and content['data']['series'] != None and 'extras' in content['data']['series'] and content['data']['series']['extras'] != None:
+                for item in content['data']['series']['extras']:
+                    name = item['title']
+                    listitem = ListItem(name)
+                    # get images
+                    icon = u''
+                    poster = u''
+                    fanart = u''
+                    thumbnail = u''
+                    for image in item['images']:
+                        if image['type'] == 'PRIMARY':
+                            thumbnail = ids.image_url.format(image['url'])
+                        elif image['type'] == 'ART_LOGO':
+                            icon = ids.image_url.format(image['url'])
+                        elif image['type'] == 'HERO_LANDSCAPE':
+                            fanart = ids.image_url.format(image['url'])
+                        elif image['type'] == 'HERO_PORTRAIT':
+                            poster = ids.image_url.format(image['url'])
+                    if not poster:
+                        poster = thumbnail
+                    if not fanart:
+                        fanart = thumbnail
+                    if not icon:
+                        icon = thumbnail
+                    listitem.setArt({'icon': icon, 'thumb': thumbnail, 'poster': poster, 'fanart': fanart})
+                    listitem.setProperty('IsPlayable', 'true')
+                    listitem.setInfo(type='Video', infoLabels={'Title': name, 'Duration': item['video']['duration'], 'mediatype': 'episode'})
+                    listitem.addContextMenuItems([('Queue', 'Action(Queue)')])
+                    addDirectoryItem(plugin.handle,plugin.url_for(
+                        play_episode, episode_id=item['video']['id']), listitem)
+                if len(content['data']['series']['extras']) < ids.offset:
+                    break
+            else:
+                break
     endOfDirectory(plugin.handle)
 
 @plugin.route('/settings')

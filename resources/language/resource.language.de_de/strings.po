@@ -23,7 +23,7 @@ msgid "Featured"
 msgstr ""
 
 msgctxt "#32002"
-msgid "Airdate: [COLOR chartreuse]{0:s}[/COLOR][CR]Available until: [COLOR chartreuse]{1:s}[/COLOR][CR][CR]""
+msgid "Airdate: [COLOR chartreuse]{0:s}[/COLOR][CR]Available until: [COLOR chartreuse]{1:s}[/COLOR][CR][CR]"
 msgstr "Ausgestrahlt: [COLOR chartreuse]{0:s}[/COLOR][CR]Verfügbar bis: [COLOR chartreuse]{1:s}[/COLOR][CR][CR]"
 
 msgctxt "#32003"
@@ -126,6 +126,22 @@ msgctxt "#32034"
 msgid "no EPG available"
 msgstr "kein EPG verfügbar"
 
+msgctxt "#32035"
+msgid "Recommendations"
+msgstr "Empfehlungen"
+
+msgctxt "#32036"
+msgid "Bonus"
+msgstr ""
+
+msgctxt "#32037"
+msgid "age rating: {0}[CR]"
+msgstr "Altersfreigabe: {0}[CR]"
+
+msgctxt "#32038"
+msgid "© {0}[CR]"
+msgstr "© {0}[CR]"
+
 msgctxt "#32102"
 msgid "number of simultanious network requests"
 msgstr "Anzahl an gleichzeitigen Netzwerkanfragen"
@@ -201,3 +217,15 @@ msgstr "Allgemeine Einstellungen"
 msgctxt "#32120"
 msgid "Live"
 msgstr ""
+
+msgctxt "#32121"
+msgid "show recommendations"
+msgstr "Zeige Empfehlungen"
+
+msgctxt "#32122"
+msgid "show age rating in video description"
+msgstr "zeige Altersfreigabe in der Video Beschreibung"
+
+msgctxt "#32123"
+msgid "show copyright notice in video description"
+msgstr "zeige Copyright Hinweis in der Video Beschreibung"

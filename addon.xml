@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<addon id="plugin.video.joyn_app" name="Joyn" version="0.4.4" provider-name="fayer3">
+<addon id="plugin.video.joyn_app" name="Joyn" version="0.4.5" provider-name="fayer3">
     <requires>
         <import addon="xbmc.python" version="2.25.0"/>
         <import addon="script.module.routing" version="0.2.0"/>
@@ -41,6 +41,11 @@
 0.4.4:
 - schreibfehler ausgebessert der das Anzeigen von Livestream Vorschaubildern verhindert hat.
 - EPG repariert, aber nun limitiert auf ca. die nächsten 25 Einträge.
+0.4.5:
+- Versuch Extras zu reparieren (nicht getested)
+- Einstellung hinzugefügt, um Empfehlungen zu einer Serien zu erhalten
+- Einstellung hinzugefügt, um Altersfreigabe in der Videobeschreibung anzuzeigen
+- Einstellung hinzugefügt, um Copyright in der Videobeschreibung anzuzeigen
         </news>
         <assets>
             <icon>resources/icon.png</icon>

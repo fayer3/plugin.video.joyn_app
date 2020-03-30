@@ -9,6 +9,9 @@
     <setting id="svod" type="enum" label="32110" lvalues="32111|32112|32113"/>
     <setting id="update_check" type="select" sort="false" label="32114" lvalues="32115|32116|32117"/>
     <setting id="last_update_warning" visible="false" type="text" default=""/>
+    <setting id="show_recommendations" type="bool" label="32121" default="true"/>
+    <setting id="age_in_description" type="bool" label="32122" default="true"/>
+    <setting id="copyright_in_description" type="bool" label="32123" default="true"/>
   </category>
   <category label="32120">
     <setting label="32105" type="lsep"/>

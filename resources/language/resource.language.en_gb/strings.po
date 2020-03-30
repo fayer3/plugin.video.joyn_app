@@ -23,7 +23,7 @@ msgid "Featured"
 msgstr ""
 
 msgctxt "#32002"
-msgid "Airdate: [COLOR chartreuse]{0:s}[/COLOR][CR]Available until: [COLOR chartreuse]{1:s}[/COLOR][CR][CR]""
+msgid "Airdate: [COLOR chartreuse]{0:s}[/COLOR][CR]Available until: [COLOR chartreuse]{1:s}[/COLOR][CR][CR]"
 msgstr ""
 
 msgctxt "#32003"
@@ -126,6 +126,22 @@ msgctxt "#32034"
 msgid "no EPG available"
 msgstr ""
 
+msgctxt "#32035"
+msgid "Recommendations"
+msgstr ""
+
+msgctxt "#32036"
+msgid "Bonus"
+msgstr ""
+
+msgctxt "#32037"
+msgid "age rating: {0}[CR]"
+msgstr ""
+
+msgctxt "#32038"
+msgid "© {0}[CR]"
+msgstr ""
+
 msgctxt "#32101"
 msgid "Debug"
 msgstr ""
@@ -204,4 +220,16 @@ msgstr ""
 
 msgctxt "#32120"
 msgid "Live"
+msgstr ""
+
+msgctxt "#32121"
+msgid "show recommendations"
+msgstr ""
+
+msgctxt "#32122"
+msgid "show age rating in video description"
+msgstr ""
+
+msgctxt "#32123"
+msgid "show copyright notice in video description"
 msgstr ""
