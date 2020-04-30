@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<addon id="plugin.video.joyn_app" name="Joyn" version="0.4.5" provider-name="fayer3">
+<addon id="plugin.video.joyn_app" name="Joyn" version="0.4.6" provider-name="fayer3">
     <requires>
         <import addon="xbmc.python" version="2.25.0"/>
         <import addon="script.module.routing" version="0.2.0"/>
@@ -46,6 +46,10 @@
 - Einstellung hinzugefügt, um Empfehlungen zu einer Serien zu erhalten
 - Einstellung hinzugefügt, um Altersfreigabe in der Videobeschreibung anzuzeigen
 - Einstellung hinzugefügt, um Copyright in der Videobeschreibung anzuzeigen
+0.4.6:
+- video abfrage auf die neue methode abgeändert
+  - einige videos/livestreams gehen nun auch ohne IP Spoofing auserhalb Deutschlands
+- bei Livestreams wird nun erkannt wie viele Werbungen vor dem Stream sind, und entsprechend gewartet.
         </news>
         <assets>
             <icon>resources/icon.png</icon>

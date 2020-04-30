@@ -111,11 +111,11 @@ msgid "No longer available"
 msgstr ""
 
 msgctxt "#32031"
-msgid "Waiting for commercial completion."
+msgid "Waiting for completion of {0} commercial."
 msgstr ""
 
 msgctxt "#32032"
-msgid "You need to wait for the completion of a commercial.[CR][CR]The stream should start in [B]{seconds}[/B] seconds."
+msgid "You need to wait for the completion of the commercials.[CR][CR]The stream should start in [B]{seconds}[/B] seconds."
 msgstr ""
 
 msgctxt "#32033"
@@ -140,6 +140,18 @@ msgstr ""
 
 msgctxt "#32038"
 msgid "© {0}[CR]"
+msgstr ""
+
+msgctxt "#32039"
+msgid "Waiting for stream."
+msgstr ""
+
+msgctxt "#32040"
+msgid "Trying to get the stream. You can change the maximum waiting time in the addon setting[CR][CR]Waited for [B]{seconds}[/B] seconds so far."
+msgstr ""
+
+msgctxt "#32041"
+msgid "Waiting for completion of {0} commercials."
 msgstr ""
 
 msgctxt "#32101"
@@ -233,3 +245,7 @@ msgstr ""
 msgctxt "#32123"
 msgid "show copyright notice in video description"
 msgstr ""
+
+msgctxt "#32124"
+msgid "Maximum wait time for the stream after a commercial in seconds"
+msgstr "Maximale Wartedauer nach Werbung in Sekunden"

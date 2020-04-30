@@ -15,16 +15,14 @@ tag_file_path = __profile__ + u'tag_cache.json'
 
 # data for requests
 
-user_agent = u'okhttp/3.14.3'
-video_useragent = u'vvs-native-android/5.3.1-AOS-503015529 (Linux;Android 5.1.1) ExoPlayerLib/2.10.6'
+user_agent = u'okhttp/4.3.1'
+video_useragent = u'vvs-native-android/5.5.0-AOS-505006035 (Linux;Android 7.1.1) ExoPlayerLib/2.11.3'
 
 # from app
 middleware_token = u'1ec991118fe49ca44c185ee6a86354ef'
 
-joyn_version = u'5.4.0-AOS-504005546'
-joyn_update_url = u'https://config.prd.platform.s.seventv.com/config/appConfig/AOS/5.4.0'
-
-
+joyn_version = u'5.5.0-AOS-505006035'
+joyn_update_url = u'https://config.prd.platform.s.seventv.com/config/appConfig/AOS/5.5.0'
 
 # from https://psf.player.v0.maxdome.cloud/dist/playback-source-fetcher.min.js
 xxtea_key = u'5C7838365C7864665C786638265C783064595C783935245C7865395C7838323F5C7866333D3B5C78386635'
@@ -85,7 +83,15 @@ player_config_url = u'https://playerconfig.prd.platform.s.joyn.de/df0aba535c6941
 
 psf_config_url = u'https://psf.player.v0.maxdome.cloud/config/psf.json'
 
-entitlement_token_url = u'entitlement-token/anonymous'
+entitlement_token_anonymous_url = u'entitlement-token/anonymous'
+
+
+auth_key_url = u'https://auth.joyn.de/auth/anonymous'
+auth_key_request = u'{{"client_id":"{uuid_no_hyphen}","client_name":"Kodi"}}'
+
+entitlement_token_url = u'entitlement-token'
+entitlement_token_header = 'Authorization'
+entitlement_token_header_format = u'{token_type} {token}'
 
 nuggvars_url = u'https://71iapp-cp.nuggad.net/rc?nuggn=2011964291&nuggsid=1282618500&nuggtg=TV_DRAMA,EDITORIAL_CONT_VIDEO&tok='
 

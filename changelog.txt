@@ -51,3 +51,7 @@ v0.4.5:
 - add setting to show recommendations for a series
 - add setting to show age rating in the video description
 - add setting to show copyright information in the video description
+v0.4.6:
+- changed video requests to the new method
+  - some videos/livestreams now work outside Germany without IP spoofing
+- for livestreams it is now checked how many commercials are before the stream, and waited accordingly

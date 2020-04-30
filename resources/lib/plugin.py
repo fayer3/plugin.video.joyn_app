@@ -32,6 +32,7 @@ import sys
 import re
 import base64
 import random
+import uuid
 
 try:
     import inputstreamhelper
@@ -922,10 +923,20 @@ def play_video(video_id, tvshow_id, brand, duration):
     entitlementBaseUrl = psf_config['default']['vod']['entitlementBaseUrl']
 
     postdata = u'{{"access_id":"{access_id}","content_id":"{content_id}","content_type":"VOD"}}'.format(access_id = player_config['accessId'], content_id = video_id)
+    get_accesstoken()
+    entitlement_headers = {ids.entitlement_token_header: ids.entitlement_token_header_format.format(token_type = kodiutils.get_setting('token_type'), token = kodiutils.get_setting('token'))}
+    entitlement_headers['x-api-key'] = psf_config['default']['vod']['apiGatewayKey']
     if kodiutils.get_setting_as_bool('fake_ip'):
-        entitlement_token_data = json.loads(post_url(entitlementBaseUrl+ids.entitlement_token_url, postdata=postdata, headers={'x-api-key': psf_config['default']['vod']['apiGatewayKey'], u'x-forwarded-for': u'53.{0}.{1}.{2}'.format(random.randint(0,256), random.randint(0,256), random.randint(0,256))}, json = True, critical=True))
-    else:
-        entitlement_token_data = json.loads(post_url(entitlementBaseUrl+ids.entitlement_token_url, postdata=postdata, headers={u'x-api-key': psf_config['default']['vod']['apiGatewayKey']}, json = True, critical=True))
+        entitlement_headers['x-forwarded-for'] = u'53.{0}.{1}.{2}'.format(random.randint(0,256), random.randint(0,256), random.randint(0,256))
+    entitlement_token_data = json.loads(post_url(entitlementBaseUrl+ids.entitlement_token_url, postdata = postdata, headers = entitlement_headers, json = True, critical = False, returnError=True))
+    if 'error' in entitlement_token_data: #token to old get new one
+        if entitlement_token_data['error'] == '401':
+            get_accesstoken(True)
+            entitlement_headers[ids.entitlement_token_header] = ids.entitlement_token_header_format.format(token_type = kodiutils.get_setting('token_type'), token = kodiutils.get_setting('token'))
+            entitlement_token_data = json.loads(post_url(entitlementBaseUrl+ids.entitlement_token_url, postdata = postdata, headers = entitlement_headers, json = True, critical = True))
+        else:
+            kodiutils.notification(u'ERROR', 'HTTP error {0}'.format(entitlement_token_data['error']))
+            return
 
     nuggvars = nuggvars_data.replace('{"','').replace(',"url":""}','').replace('":','=').replace(',"','&')
 
@@ -1008,10 +1019,20 @@ def play_live(stream_id, brand, _try=1):
 
     postdata = u'{{"access_id":"{accessId}","content_id":"{stream_id}","content_type":"LIVE"}}'.format(accessId=player_config['accessId'], stream_id=stream_id)
     #'{"access_id":"'+ player_config['accessId']+'","content_id":"'+stream_id+'","content_type":"LIVE"}'
+    get_accesstoken()
+    entitlement_headers = {ids.entitlement_token_header: ids.entitlement_token_header_format.format(token_type = kodiutils.get_setting('token_type'), token = kodiutils.get_setting('token'))}
+    entitlement_headers['x-api-key'] = psf_config['default']['vod']['apiGatewayKey']
     if kodiutils.get_setting_as_bool('fake_ip'):
-        entitlement_token_data = json.loads(post_url(entitlementBaseUrl+ids.entitlement_token_url, postdata=postdata, headers={'x-api-key': psf_config['default']['live']['apiGatewayKey'], u'x-forwarded-for': u'53.{0}.{1}.{2}'.format(random.randint(0,256), random.randint(0,256), random.randint(0,256))}, json = True, critical=True))
-    else:
-        entitlement_token_data = json.loads(post_url(entitlementBaseUrl+ids.entitlement_token_url, postdata=postdata, headers={u'x-api-key': psf_config['default']['live']['apiGatewayKey']}, json = True, critical=True))
+        entitlement_headers['x-forwarded-for'] = u'53.{0}.{1}.{2}'.format(random.randint(0,256), random.randint(0,256), random.randint(0,256))
+    entitlement_token_data = json.loads(post_url(entitlementBaseUrl+ids.entitlement_token_url, postdata = postdata, headers = entitlement_headers, json = True, critical = False, returnError=True))
+    if 'error' in entitlement_token_data: #token to old get new one
+        if entitlement_token_data['error'] == '401':
+            get_accesstoken(True)
+            entitlement_headers[ids.entitlement_token_header] = ids.entitlement_token_header_format.format(token_type = kodiutils.get_setting('token_type'), token = kodiutils.get_setting('token'))
+            entitlement_token_data = json.loads(post_url(entitlementBaseUrl+ids.entitlement_token_url, postdata = postdata, headers = entitlement_headers, json = True, critical = True))
+        else:
+            kodiutils.notification(u'ERROR', 'HTTP error {0}'.format(entitlement_token_data['error']))
+            return
 
     clientData = base64.b64encode((ids.clientdata_live.format(stream_id=stream_id, brand=brand)).encode('utf-8')).decode('utf-8')
     log(u'clientData: {0}'.format(clientData))
@@ -1046,12 +1067,21 @@ def play_live(stream_id, brand, _try=1):
             log(u'No BaseURL in stream. try limit of \'{0}\' reached. Show commercial timer'.format(kodiutils.get_setting_as_int('ad_tries')))
             success = False
             add_data = get_url(video_data['vmap'], headers={'User-Agent': ids.video_useragent}, key = False, critical = True)
-            add_duration = re.findall('(?:yospace:AdBreak duration="|<Duration>)(.*?)(?:</Duration>|"/>)', add_data)
-            if len(add_duration) > 0:
-                duration = sum(time * int(milli) for time, milli in zip([3600000, 60000, 1000, 1], re.split('\D+', add_duration[0])))
-                if handle_wait(duration, 'title', 'text'):
+            adds = re.findall('<Ad ((.|\n)*?)Ad>',add_data)
+            number_of_adds = len(adds)
+            duration = 0
+            for add in adds:
+                log(type(add))
+                add_duration = re.findall('(?:yospace:AdBreak duration="|<Duration>)(.*?)(?:</Duration>|"/>)', add[0])
+                duration += sum(time * int(milli) for time, milli in zip([3600000, 60000, 1000, 1], re.split('\D+', add_duration[0])))
+            if duration > 0:
+                if handle_wait(duration, number_of_adds, video_url, 5000):
                     video_url_data = get_url(video_url, headers={'User-Agent': ids.video_useragent}, key = False, critical = True)
                     success = 'BaseURL' in video_url_data
+                    if not success:
+                        if handle_wait_baseurl(kodiutils.get_setting_as_int('add_wait')*1000, 'title', 'text', video_url, 750):
+                            video_url_data = get_url(video_url, headers={'User-Agent': ids.video_useragent}, key = False, critical = True)
+                            success = 'BaseURL' in video_url_data
             if success == False:
                 kodiutils.notification(u'ERROR', kodiutils.get_string(32005))
                 setResolvedUrl(plugin.handle, False, ListItem('none'))
@@ -1295,7 +1325,7 @@ def get_url(url, headers={}, key=True, cache=False, critical=False):
         ids.set_config_cache(url, data, request.info().get('Last-Modified'))
     return data
 
-def post_url(url, postdata, headers={}, json = False, key = False, critical=False):
+def post_url(url, postdata, headers={}, json = False, key = False, critical=False, returnError=False):
     log(u'post: {0}, {1}'.format(url, headers))
     new_headers = {}
     new_headers.update(headers)
@@ -1341,6 +1371,8 @@ def post_url(url, postdata, headers={}, json = False, key = False, critical=Fals
                 kodiutils.notification(u'ERROR GETTING URL', failure)
             return sys.exit(0)
         else:
+            if returnError:
+                return u'{{"error": "{0}"}}'.format(getattr(e, 'code'))
             return u''
 
     if request.info().get('Content-Encoding') == 'gzip':
@@ -1352,23 +1384,74 @@ def post_url(url, postdata, headers={}, json = False, key = False, critical=Fals
         data = request.read()
     return data.decode('utf-8')
 
-def handle_wait(time, title, text):
+def handle_wait(time, commercials=1, url='', request_interval = 1000):
     log(u'waiting for {0} seconds'.format(time/1000.0))
+    log(u'requesting url every {0} milliseconds'.format(request_interval))
     progress = xbmcgui.DialogProgress()
-    ret = progress.create(kodiutils.get_string(32031))
+    text = kodiutils.get_string(32031).format(commercials)
+    if commercials > 1:
+        text = kodiutils.get_string(32041).format(commercials)
+    ret = progress.create(text)
     millisecs = 0
     percent = 0
     cancelled = False
+    lasturl = 0
     while millisecs < time:
         percent = millisecs * 100 / time
         time_left = str((time - millisecs) / 1000.0)
         progress.update(percent, kodiutils.get_string(32032).format(seconds=time_left))
+        if url != '' and lasturl + request_interval < millisecs:
+            lasturl = millisecs
+            get_url(url, headers={'User-Agent': ids.video_useragent}, key = False, critical = False)
         xbmc.sleep(100)
         millisecs += 100
         if (progress.iscanceled()):
             return False
     progress.close()
     return True
+
+def handle_wait_baseurl(time, title, text, url, request_interval):
+    log(u'waiting for baseurl')
+    progress = xbmcgui.DialogProgress()
+    ret = progress.create(kodiutils.get_string(32039))
+    millisecs = 0
+    percent = 0
+    finished = False
+    lasturl = 0
+    while not finished:
+        percent = millisecs * 100 / time
+        progress.update(percent, kodiutils.get_string(32040).format(seconds=millisecs/1000))
+        if url != '' and lasturl + request_interval < millisecs:
+            lasturl += request_interval
+            video_url_data = get_url(url, headers={'User-Agent': ids.video_useragent}, key = False, critical = False)
+            finished = 'BaseURL' in video_url_data
+        xbmc.sleep(25)
+        millisecs += 25
+        if (progress.iscanceled()):
+            return False
+        if millisecs > time:
+            video_url_data = get_url(url, headers={'User-Agent': ids.video_useragent}, key = False, critical = False)
+            finished = 'BaseURL' in video_url_data
+            break
+    progress.close()
+    return finished
+
+def get_accesstoken(force = False):
+    if kodiutils.get_setting('token_uuid') == '':
+        kodiutils.set_setting('token_uuid', uuid.uuid4().hex)
+    if (kodiutils.get_setting('token_time') != '' and not force):
+        timestamp = int(kodiutils.get_setting('token_time'))
+        if datetime.now() < datetime(1970, 1, 1) + timedelta(seconds=timestamp):
+            return
+    auth_key_url = u'https://auth.joyn.de/auth/anonymous'
+    postdata = ids.auth_key_request.format(uuid_no_hyphen=kodiutils.get_setting('token_uuid'))
+    token_data = json.loads(post_url(ids.auth_key_url, postdata, headers={'Accept-Encoding': 'gzip'}, json = True, key = False, critical=True))
+        
+    kodiutils.set_setting('token_type', token_data['token_type'])
+    kodiutils.set_setting('token', token_data['access_token'])
+    valid = datetime.now() + timedelta(milliseconds=int(token_data['expires_in']))
+    timestamp = int((valid - datetime(1970, 1, 1)).total_seconds())
+    kodiutils.set_setting('token_time', timestamp)
 
 def run():
     plugin.run()

@@ -12,6 +12,11 @@
     <setting id="show_recommendations" type="bool" label="32121" default="true"/>
     <setting id="age_in_description" type="bool" label="32122" default="true"/>
     <setting id="copyright_in_description" type="bool" label="32123" default="true"/>
+    <setting id="token_uuid" label="token uuid" type="text" default="" visible="false"/>
+    <setting id="token" label="token" type="text" default="" visible="false"/>
+    <setting id="token_type" label="token type" type="text" default="" visible="false"/>
+    <setting id="token_time" label="token time" type="text" default="" visible="false"/>
+    
   </category>
   <category label="32120">
     <setting label="32105" type="lsep"/>
@@ -19,5 +24,6 @@
     <setting id="live_show_in_label" type="bool" label="32107" default="false"/>
     <setting id="channel_name_in_stream_title" type="bool" label="32104" default="false"/>
     <setting id="ad_tries" type="number" label="32109" default="2"/>
+    <setting id="add_wait" type="number" label="32124" default="10"/>
   </category>
 </settings>
