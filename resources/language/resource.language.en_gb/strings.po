@@ -154,6 +154,14 @@ msgctxt "#32041"
 msgid "Waiting for completion of {0} commercials."
 msgstr ""
 
+msgctxt "#32042"
+msgid "Could't get a new proxy. Try again?"
+msgstr ""
+
+msgctxt "#32043"
+msgid "Unsupported protocol: '{0}'. only http/https is supported."
+msgstr ""
+
 msgctxt "#32101"
 msgid "Debug"
 msgstr ""
@@ -248,4 +256,24 @@ msgstr ""
 
 msgctxt "#32124"
 msgid "Maximum wait time for the stream after a commercial in seconds"
-msgstr "Maximale Wartedauer nach Werbung in Sekunden"
+msgstr ""
+
+msgctxt "#32125"
+msgid "custom proxy"
+msgstr ""
+
+msgctxt "#32126"
+msgid "legacy video request method"
+msgstr ""
+
+msgctxt "#32127"
+msgid "use proxy to bypass geoblocking"
+msgstr ""
+
+msgctxt "#32128"
+msgid "additional proxy sites"
+msgstr ""
+
+msgctxt "#32129"
+msgid "request new token"
+msgstr ""

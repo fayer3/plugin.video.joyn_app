@@ -55,3 +55,10 @@ v0.4.6:
 - changed video requests to the new method
   - some videos/livestreams now work outside Germany without IP spoofing
 - for livestreams it is now checked how many commercials are before the stream, and waited accordingly
+v0.4.7:
+- replaced non working IP spoofing with request over proxy, only the access token is requested over the proxy
+  - only http/https proxies are supported, because I couldn't get SOCKS4/SOCKS5 to run
+  - a proxy is automatically fetched with gimmeproxy.com or pubproxy.com 
+    - additional proxy request sites can be added in the addon settings
+  - it is also possible to use a custom proxy
+- added an option to request a new access token on the next video request

@@ -4,7 +4,6 @@
     <setting label="32119" type="lsep"/>
     <setting id="debug" type="bool" label="32101" default="false"/>
     <setting id="simultanious_requests" type="number" label="32102" default="10"/>
-    <setting id="fake_ip" type="bool" label="32103" default="false"/>
     <setting id="number_in_name" type="bool" label="32108" default="false"/>
     <setting id="svod" type="enum" label="32110" lvalues="32111|32112|32113"/>
     <setting id="update_check" type="select" sort="false" label="32114" lvalues="32115|32116|32117"/>
@@ -12,11 +11,25 @@
     <setting id="show_recommendations" type="bool" label="32121" default="true"/>
     <setting id="age_in_description" type="bool" label="32122" default="true"/>
     <setting id="copyright_in_description" type="bool" label="32123" default="true"/>
-    <setting id="token_uuid" label="token uuid" type="text" default="" visible="false"/>
-    <setting id="token" label="token" type="text" default="" visible="false"/>
-    <setting id="token_type" label="token type" type="text" default="" visible="false"/>
-    <setting id="token_time" label="token time" type="text" default="" visible="false"/>
-    
+  </category>
+  <category label="PROXY">
+    <setting id="legacy_request" type="bool" label="32126" default="false" visible="false"/>
+    <setting id="fake_ip" type="bool" label="32103" default="false" enable="eq(-1,true)" visible="false"/>
+    <setting type="sep" visible="false"/>
+    <setting id="use_proxy" type="bool" label="32127" default="false"/>
+    <setting id="proxy_timeout" label="Proxy Timeout" type="number" default="30" enable="eq(-1,true)"/>
+    <setting id="proxy_sites" label="32128" type="text" enable="eq(-2,true)" default=""/>
+    <setting id="manual_proxy" label="32125" type="bool" default="false"  enable="eq(-3,true)"/>
+    <setting id="current_proxy_protocol" label="Protocol" type="text" default="" enable="eq(-1,true)+eq(-4,true)"/>
+    <setting id="current_proxy_ip" label="IP" type="ipaddress" default="" enable="eq(-2,true)+eq(-5,true)"/>
+    <setting id="current_proxy_port" label="Port" type="number" default="" enable="eq(-3,true)+eq(-6,true)"/>
+  </category>
+  <category label="ACCESS TOKEN">
+    <setting id="token_uuid" label="client uuid v4" type="text" default=""/>
+    <setting id="new_token" label="32129" type="bool" default="false"/>
+    <setting id="token" label="token" type="text" default="" enable="false"/>
+    <setting id="token_type" label="token type" type="text" default="" enable="false"/>
+    <setting id="token_time" label="valid until" type="text" default="" enable="false"/>
   </category>
   <category label="32120">
     <setting label="32105" type="lsep"/>

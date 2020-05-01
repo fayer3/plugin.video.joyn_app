@@ -53,12 +53,12 @@ except ImportError:
     from io import BytesIO as StringIO
 
 try:
-    from urllib.request import Request, urlopen
+    from urllib.request import Request, urlopen, build_opener, ProxyHandler
     from urllib.error import HTTPError, URLError
     from urllib.parse import quote, unquote
 except ImportError:
     from urllib import quote, unquote
-    from urllib2 import Request, urlopen, HTTPError, URLError
+    from urllib2 import Request, urlopen, HTTPError, URLError, build_opener, ProxyHandler
 
 try:
     from html.parser import HTMLParser
@@ -926,16 +926,15 @@ def play_video(video_id, tvshow_id, brand, duration):
     get_accesstoken()
     entitlement_headers = {ids.entitlement_token_header: ids.entitlement_token_header_format.format(token_type = kodiutils.get_setting('token_type'), token = kodiutils.get_setting('token'))}
     entitlement_headers['x-api-key'] = psf_config['default']['vod']['apiGatewayKey']
-    if kodiutils.get_setting_as_bool('fake_ip'):
-        entitlement_headers['x-forwarded-for'] = u'53.{0}.{1}.{2}'.format(random.randint(0,256), random.randint(0,256), random.randint(0,256))
-    entitlement_token_data = json.loads(post_url(entitlementBaseUrl+ids.entitlement_token_url, postdata = postdata, headers = entitlement_headers, json = True, critical = False, returnError=True))
+    entitlement_token_data = json.loads(post_url(entitlementBaseUrl+ids.entitlement_token_url, postdata = postdata, headers = entitlement_headers, json = True, critical = True, returnError=True))
     if 'error' in entitlement_token_data: #token to old get new one
         if entitlement_token_data['error'] == '401':
             get_accesstoken(True)
             entitlement_headers[ids.entitlement_token_header] = ids.entitlement_token_header_format.format(token_type = kodiutils.get_setting('token_type'), token = kodiutils.get_setting('token'))
             entitlement_token_data = json.loads(post_url(entitlementBaseUrl+ids.entitlement_token_url, postdata = postdata, headers = entitlement_headers, json = True, critical = True))
         else:
-            kodiutils.notification(u'ERROR', 'HTTP error {0}'.format(entitlement_token_data['error']))
+            if entitlement_token_data['error'] != '422':
+                kodiutils.notification(u'ERROR', 'HTTP error {0}'.format(entitlement_token_data['error']))
             return
 
     nuggvars = nuggvars_data.replace('{"','').replace(',"url":""}','').replace('":','=').replace(',"','&')
@@ -1022,16 +1021,15 @@ def play_live(stream_id, brand, _try=1):
     get_accesstoken()
     entitlement_headers = {ids.entitlement_token_header: ids.entitlement_token_header_format.format(token_type = kodiutils.get_setting('token_type'), token = kodiutils.get_setting('token'))}
     entitlement_headers['x-api-key'] = psf_config['default']['vod']['apiGatewayKey']
-    if kodiutils.get_setting_as_bool('fake_ip'):
-        entitlement_headers['x-forwarded-for'] = u'53.{0}.{1}.{2}'.format(random.randint(0,256), random.randint(0,256), random.randint(0,256))
-    entitlement_token_data = json.loads(post_url(entitlementBaseUrl+ids.entitlement_token_url, postdata = postdata, headers = entitlement_headers, json = True, critical = False, returnError=True))
+    entitlement_token_data = json.loads(post_url(entitlementBaseUrl+ids.entitlement_token_url, postdata = postdata, headers = entitlement_headers, json = True, critical = True, returnError=True))
     if 'error' in entitlement_token_data: #token to old get new one
         if entitlement_token_data['error'] == '401':
             get_accesstoken(True)
             entitlement_headers[ids.entitlement_token_header] = ids.entitlement_token_header_format.format(token_type = kodiutils.get_setting('token_type'), token = kodiutils.get_setting('token'))
             entitlement_token_data = json.loads(post_url(entitlementBaseUrl+ids.entitlement_token_url, postdata = postdata, headers = entitlement_headers, json = True, critical = True))
         else:
-            kodiutils.notification(u'ERROR', 'HTTP error {0}'.format(entitlement_token_data['error']))
+            if entitlement_token_data['error'] != '422':
+                kodiutils.notification(u'ERROR', 'HTTP error {0}'.format(entitlement_token_data['error']))
             return
 
     clientData = base64.b64encode((ids.clientdata_live.format(stream_id=stream_id, brand=brand)).encode('utf-8')).decode('utf-8')
@@ -1325,7 +1323,7 @@ def get_url(url, headers={}, key=True, cache=False, critical=False):
         ids.set_config_cache(url, data, request.info().get('Last-Modified'))
     return data
 
-def post_url(url, postdata, headers={}, json = False, key = False, critical=False, returnError=False):
+def post_url(url, postdata, headers={}, json = False, key = False, critical=False, returnError=False, proxy=False, newproxy=True):
     log(u'post: {0}, {1}'.format(url, headers))
     new_headers = {}
     new_headers.update(headers)
@@ -1338,13 +1336,41 @@ def post_url(url, postdata, headers={}, json = False, key = False, critical=Fals
         new_headers.update({'Joyn-Platform': 'android'})
         #new_headers.update({'Joyn-Client-Version': ids.joyn_version})
     try:
-        request = urlopen(Request(url, headers=new_headers, data=postdata.encode('utf-8')))
+        if proxy:
+            if not check_proxy():
+                kodiutils.notification(u'Proxy ERROR', 'no proxy found')
+                return sys.exit(0)
+            protocol_s = kodiutils.get_setting('current_proxy_protocol')
+            ip = kodiutils.get_setting('current_proxy_ip')
+            port = kodiutils.get_setting_as_int('current_proxy_port')
+            timeout = kodiutils.get_setting_as_int('proxy_timeout')
+            if protocol_s.lower() != 'http' and protocol_s.lower() != 'https':
+                kodiutils.notification(u'Proxy ERROR', kodiutils.get_string(32043).format(protocol_s))
+                return sys.exit(0)
+            opener = build_opener(ProxyHandler({"https" : '{0}://{1}:{2}'.format(protocol_s, ip, port)}))
+            try:
+                request = opener.open(Request(url, headers=new_headers, data=postdata.encode('utf-8')), timeout=timeout)
+            except URLError as e:
+                log(u'(post_url) ERROR - proxy error: {0}'.format(e))
+                if kodiutils.get_setting_as_bool('manual_proxy') or newproxy == False:
+                    kodiutils.notification(u'ERROR GETTING URL', 'PROXY error')
+                    if critical:
+                        return sys.exit(0)
+                    return u''
+                #try another one
+                if get_new_proxy():
+                    return post_url(url, postdata, headers, json, key, critical, returnError, proxy, newproxy=False)
+                kodiutils.notification(u'ERROR GETTING PROXY', kodiutils.get_string(32042))
+                if critical:
+                    return sys.exit(0)
+        else:
+            request = urlopen(Request(url, headers=new_headers, data=postdata.encode('utf-8')))
     except HTTPError as e:
         failure = str(e)
         if hasattr(e, 'code'):
-            log(u'(getUrl) ERROR - ERROR - ERROR : ########## {0} === {1} === {2} ##########'.format(url, postdata, failure))
+            log(u'(post_url) ERROR - ERROR - ERROR : ########## {0} === {1} === {2} ##########'.format(url, postdata, failure))
         elif hasattr(e, 'reason'):
-            log(u'(getUrl) ERROR - ERROR - ERROR : ########## {0} === {1} === {2} ##########'.format(url, postdata, failure))
+            log(u'(post_url) ERROR - ERROR - ERROR : ########## {0} === {1} === {2} ##########'.format(url, postdata, failure))
         data = u''
         try:
             if e.info().get('Content-Encoding') == 'gzip':
@@ -1369,6 +1395,8 @@ def post_url(url, postdata, headers={}, json = False, key = False, critical=Fals
                     kodiutils.notification(u'ERROR GETTING URL', kodiutils.get_string(32003))
             else:
                 kodiutils.notification(u'ERROR GETTING URL', failure)
+            if returnError:
+                return u'{{"error": "{0}"}}'.format(getattr(e, 'code'))
             return sys.exit(0)
         else:
             if returnError:
@@ -1439,19 +1467,74 @@ def handle_wait_baseurl(time, title, text, url, request_interval):
 def get_accesstoken(force = False):
     if kodiutils.get_setting('token_uuid') == '':
         kodiutils.set_setting('token_uuid', uuid.uuid4().hex)
-    if (kodiutils.get_setting('token_time') != '' and not force):
+    if (kodiutils.get_setting('token_time') != '' and not force) and not kodiutils.get_setting_as_bool('new_token'):
+        log('checking old token')
         timestamp = int(kodiutils.get_setting('token_time'))
         if datetime.now() < datetime(1970, 1, 1) + timedelta(seconds=timestamp):
+            log('old token still good')
             return
-    auth_key_url = u'https://auth.joyn.de/auth/anonymous'
+    log('requesting new token: force={0}'.format(force))
+    kodiutils.set_setting('new_token', False)
+    auth_key_url = ids.auth_key_url
     postdata = ids.auth_key_request.format(uuid_no_hyphen=kodiutils.get_setting('token_uuid'))
-    token_data = json.loads(post_url(ids.auth_key_url, postdata, headers={'Accept-Encoding': 'gzip'}, json = True, key = False, critical=True))
-        
+    headers = {'Accept-Encoding': 'gzip'}
+    if kodiutils.get_setting_as_bool('use_proxy'):
+        #headers['x-forwarded-for'] = u'53.{0}.{1}.{2}'.format(random.randint(0,256), random.randint(0,256), random.randint(0,256))
+        token_data = json.loads(post_url(ids.auth_key_url, postdata, headers=headers, json = True, key = False, critical=True, proxy=True))
+    else:
+        token_data = json.loads(post_url(ids.auth_key_url, postdata, headers=headers, json = True, key = False, critical=True))
+    log('token data: {0}'.format(token_data))
     kodiutils.set_setting('token_type', token_data['token_type'])
     kodiutils.set_setting('token', token_data['access_token'])
     valid = datetime.now() + timedelta(milliseconds=int(token_data['expires_in']))
     timestamp = int((valid - datetime(1970, 1, 1)).total_seconds())
     kodiutils.set_setting('token_time', timestamp)
+
+def check_proxy():
+    protocol = kodiutils.get_setting('current_proxy_protocol')
+    ip = kodiutils.get_setting('current_proxy_ip')
+    port = kodiutils.get_setting('current_proxy_port')
+    if (protocol != '' and ip != '' and port != '' and test_proxy('{0}://{1}:{2}'.format(protocol, ip, port))) or kodiutils.get_setting_as_bool('manual_proxy'):
+        return True
+    return get_new_proxy()
+
+def test_proxy(proxy):
+    log('testing proxy: {0}'.format(proxy))
+    timeout = kodiutils.get_setting_as_int('proxy_timeout')
+    try:
+        opener = build_opener(ProxyHandler({'http': proxy}))
+        res = opener.open(Request('http://www.google.com'), timeout=timeout)
+    except (HTTPError, Exception) as e:
+        log('proxy is bad')
+        return False
+    log('proxy is good')
+    return True
+
+def get_new_proxy():
+    protocol = kodiutils.get_setting('current_proxy_protocol')
+    ip = kodiutils.get_setting('current_proxy_ip')
+    port = kodiutils.get_setting('current_proxy_port')
+    
+    proxy_sites = kodiutils.get_setting('proxy_sites').split(';')
+    proxy_sites = proxy_sites + ids.proxy_api_urls
+    log('set proxy sites are: {0}'.format(proxy_sites))
+    found_new = False
+    for site in proxy_sites:
+        if site != '':
+            data = get_url(site, key=False, critical=False)
+            if data != '':
+                newproxy = json.loads(data)
+                if not 'data' in newproxy:
+                    newproxy = {'data': [newproxy]}
+                for proxy in newproxy['data']:
+                    if proxy['ip'] != ip and proxy['port'] != port:
+                        if test_proxy('{0}://{1}:{2}'.format(proxy['type'], proxy['ip'], proxy['port'])):
+                            found_new = True
+                            protocol = kodiutils.set_setting('current_proxy_protocol', proxy['type'])
+                            ip = kodiutils.set_setting('current_proxy_ip', proxy['ip'])
+                            port = kodiutils.set_setting('current_proxy_port', proxy['port'])
+                            return found_new
+    return found_new
 
 def run():
     plugin.run()

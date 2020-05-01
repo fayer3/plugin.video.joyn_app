@@ -154,6 +154,14 @@ msgctxt "#32041"
 msgid "Waiting for completion of {0} commercials."
 msgstr "Warten bis {0} Werbespots vorbei sind."
 
+msgctxt "#32042"
+msgid "Could't get a new proxy. Try again?"
+msgstr "Konnte keinen neuen Proxy abfragen. Versuch es noch einmal?"
+
+msgctxt "#32043"
+msgid "Unsupported protocol: '{0}'. only http/https is supported."
+msgstr "Nicht unterstütztes Protokoll: '{0}'. Nur http/https wird unterstützt."
+
 msgctxt "#32102"
 msgid "number of simultanious network requests"
 msgstr "Anzahl an gleichzeitigen Netzwerkanfragen"
@@ -245,3 +253,23 @@ msgstr "zeige Copyright Hinweis in der Video Beschreibung"
 msgctxt "#32124"
 msgid "Maximum wait time for the stream after a commercial in seconds"
 msgstr "Maximale Wartedauer nach Werbung in Sekunden"
+
+msgctxt "#32125"
+msgid "custom proxy"
+msgstr "eigener Proxy"
+
+msgctxt "#32126"
+msgid "legacy video request method"
+msgstr "alte video Abrufmethode"
+
+msgctxt "#32127"
+msgid "use proxy to bypass geoblocking"
+msgstr "verwende einen Proxy um Geoblocking zu umgehen"
+
+msgctxt "#32128"
+msgid "additional proxy sites"
+msgstr "weitere Proxy Abrufseiten"
+
+msgctxt "#32129"
+msgid "request new token"
+msgstr "neuen Token abfragen"

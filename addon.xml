@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<addon id="plugin.video.joyn_app" name="Joyn" version="0.4.6" provider-name="fayer3">
+<addon id="plugin.video.joyn_app" name="Joyn" version="0.4.7" provider-name="fayer3">
     <requires>
         <import addon="xbmc.python" version="2.25.0"/>
         <import addon="script.module.routing" version="0.2.0"/>
@@ -50,6 +50,13 @@
 - video abfrage auf die neue methode abgeändert
   - einige videos/livestreams gehen nun auch ohne IP Spoofing auserhalb Deutschlands
 - bei Livestreams wird nun erkannt wie viele Werbungen vor dem Stream sind, und entsprechend gewartet.
+0.4.7:
+- nicht mehr funktionierendes IP Spoofing durch anfrage über Proxy ersetzt
+  - es werden nur http/https Proxies unterstützt, weil ich SOCKS4/SOCKS5 nicht zum laufen gebracht habe
+  - es wird automatisch ein Proxy von gimmeproxy.com oder pubproxy.com abgerufen
+    - weitere Proxy Abfrageseiten können über die Addoneinstellungen hinzugefügt werden
+  - es kann auch manuell ein Proxy angegeben werden
+- option hinzugefügt, um einen neuen Zugriffstoken bei der nächsten Video Abfrage abzufragen
         </news>
         <assets>
             <icon>resources/icon.png</icon>

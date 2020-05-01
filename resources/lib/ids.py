@@ -24,6 +24,10 @@ middleware_token = u'1ec991118fe49ca44c185ee6a86354ef'
 joyn_version = u'5.5.0-AOS-505006035'
 joyn_update_url = u'https://config.prd.platform.s.seventv.com/config/appConfig/AOS/5.5.0'
 
+proxy_api_urls = [
+    u'https://gimmeproxy.com/api/getProxy?post=true&country=DE&supportsHttps=true&anonymityLevel=1&protocol=http',
+    u'http://pubproxy.com/api/proxy?format=json&https=true&post=true&country=DE&level=anonymous,elite&type=http&limit=5']
+
 # from https://psf.player.v0.maxdome.cloud/dist/playback-source-fetcher.min.js
 xxtea_key = u'5C7838365C7864665C786638265C783064595C783935245C7865395C7838323F5C7866333D3B5C78386635'
 
@@ -83,7 +87,7 @@ player_config_url = u'https://playerconfig.prd.platform.s.joyn.de/df0aba535c6941
 
 psf_config_url = u'https://psf.player.v0.maxdome.cloud/config/psf.json'
 
-entitlement_token_anonymous_url = u'entitlement-token/anonymous'
+entitlement_token_legacy_url = u'entitlement-token/anonymous'
 
 
 auth_key_url = u'https://auth.joyn.de/auth/anonymous'
