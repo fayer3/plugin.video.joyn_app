@@ -1527,13 +1527,14 @@ def get_new_proxy():
                 if not 'data' in newproxy:
                     newproxy = {'data': [newproxy]}
                 for proxy in newproxy['data']:
-                    if proxy['ip'] != ip and proxy['port'] != port:
-                        if test_proxy('{0}://{1}:{2}'.format(proxy['type'], proxy['ip'], proxy['port'])):
-                            found_new = True
-                            protocol = kodiutils.set_setting('current_proxy_protocol', proxy['type'])
-                            ip = kodiutils.set_setting('current_proxy_ip', proxy['ip'])
-                            port = kodiutils.set_setting('current_proxy_port', proxy['port'])
-                            return found_new
+                    if not 'error' in proxy:
+                        if proxy['ip'] != ip and proxy['port'] != port:
+                            if test_proxy('{0}://{1}:{2}'.format(proxy['type'], proxy['ip'], proxy['port'])):
+                                found_new = True
+                                protocol = kodiutils.set_setting('current_proxy_protocol', proxy['type'])
+                                ip = kodiutils.set_setting('current_proxy_ip', proxy['ip'])
+                                port = kodiutils.set_setting('current_proxy_port', proxy['port'])
+                                return found_new
     return found_new
 
 def run():
