@@ -162,6 +162,18 @@ msgctxt "#32043"
 msgid "Unsupported protocol: '{0}'. only http/https is supported."
 msgstr ""
 
+msgctxt "#32044"
+msgid "Checking for Proxies"
+msgstr ""
+
+msgctxt "#32045"
+msgid "current site: {0}"
+msgstr ""
+
+msgctxt "#32046"
+msgid "current site: {0}[CR]checking proxy: {1}[CR]{2}/{3}"
+msgstr ""
+
 msgctxt "#32101"
 msgid "Debug"
 msgstr ""

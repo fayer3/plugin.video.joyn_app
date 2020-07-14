@@ -64,3 +64,9 @@ v0.4.7:
 - added an option to request a new access token on the next video request
 v0.4.8:
 - fixed issue if no proxies are available to fetch
+v0.4.9:
+- reworked proxy checking:
+  - fixed bug, which skipped proxies
+  - fixed bug, which marked bad proxies as good
+  - a dialog is now shown while checking proxies
+  - added two additional proxy sites

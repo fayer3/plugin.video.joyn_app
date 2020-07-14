@@ -1419,7 +1419,7 @@ def handle_wait(time, commercials=1, url='', request_interval = 1000):
     text = kodiutils.get_string(32031).format(commercials)
     if commercials > 1:
         text = kodiutils.get_string(32041).format(commercials)
-    ret = progress.create(text)
+    progress.create(text)
     millisecs = 0
     percent = 0
     cancelled = False
@@ -1441,7 +1441,7 @@ def handle_wait(time, commercials=1, url='', request_interval = 1000):
 def handle_wait_baseurl(time, title, text, url, request_interval):
     log(u'waiting for baseurl')
     progress = xbmcgui.DialogProgress()
-    ret = progress.create(kodiutils.get_string(32039))
+    progress.create(kodiutils.get_string(32039))
     millisecs = 0
     percent = 0
     finished = False
@@ -1502,8 +1502,8 @@ def test_proxy(proxy):
     log('testing proxy: {0}'.format(proxy))
     timeout = kodiutils.get_setting_as_int('proxy_timeout')
     try:
-        opener = build_opener(ProxyHandler({'http': proxy}))
-        res = opener.open(Request('http://www.google.com'), timeout=timeout)
+        opener = build_opener(ProxyHandler({'http': proxy, 'https': proxy}))
+        res = opener.open(Request('https://www.google.com'), timeout=timeout)
     except (HTTPError, Exception) as e:
         log('proxy is bad')
         return False
@@ -1519,22 +1519,36 @@ def get_new_proxy():
     proxy_sites = proxy_sites + ids.proxy_api_urls
     log('set proxy sites are: {0}'.format(proxy_sites))
     found_new = False
+    progress = xbmcgui.DialogProgress()
+    progress.create(kodiutils.get_string(32044))
     for site in proxy_sites:
         if site != '':
+            if (progress.iscanceled()):
+                return found_new
+            sitetext = site[:int(site.find('/', 8))]
+            log('checking "{0}" for proxies'.format(sitetext))
+            progress.update(0, line1=kodiutils.get_string(32045).format(sitetext))
             data = get_url(site, key=False, critical=False)
             if data != '':
                 newproxy = json.loads(data)
                 if not 'data' in newproxy:
                     newproxy = {'data': [newproxy]}
+                i = 0
                 for proxy in newproxy['data']:
+                    i += 1
+                    if (progress.iscanceled()):
+                        return found_new
                     if not 'error' in proxy:
-                        if proxy['ip'] != ip and proxy['port'] != port:
-                            if test_proxy('{0}://{1}:{2}'.format(proxy['type'], proxy['ip'], proxy['port'])):
+                        progress.update(i*100/len(newproxy['data']), line1=kodiutils.get_string(32046).format(sitetext, '{0}://{1}:{2}'.format(proxy.get('type', proxy.get('protocol', proxy.get('proxyType'))), proxy['ip'], proxy['port']), i, len(newproxy['data'])))
+                        if (proxy['ip'] != ip or proxy['port'] != port) and proxy['ip'] != '0.0.0.0':
+                            if test_proxy('{0}://{1}:{2}'.format(proxy.get('type', proxy.get('protocol', proxy.get('proxyType'))), proxy['ip'], proxy['port'])):
                                 found_new = True
-                                protocol = kodiutils.set_setting('current_proxy_protocol', proxy['type'])
+                                protocol = kodiutils.set_setting('current_proxy_protocol', proxy.get('type', proxy.get('protocol', proxy.get('proxyType'))))
                                 ip = kodiutils.set_setting('current_proxy_ip', proxy['ip'])
                                 port = kodiutils.set_setting('current_proxy_port', proxy['port'])
+                                progress.close()
                                 return found_new
+    progress.close()
     return found_new
 
 def run():

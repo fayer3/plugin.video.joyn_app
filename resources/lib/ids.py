@@ -26,6 +26,8 @@ joyn_update_url = u'https://config.prd.platform.s.seventv.com/config/appConfig/A
 
 proxy_api_urls = [
     u'https://gimmeproxy.com/api/getProxy?post=true&country=DE&supportsHttps=true&anonymityLevel=1&protocol=http',
+    u'https://api.getproxylist.com/proxy?anonymity[]=high%20anonymity&anonymity[]=anonymous&country[]=DE&allowsHttps=1&protocol[]=http',
+    u'https://www.freshproxies.net/ProxyList?countries_1=DE&countries_2=DE&protocol=HTTPS&level=anon&order=uptime&frame=1H&format=json&fields=comp&key=',
     u'http://pubproxy.com/api/proxy?format=json&https=true&post=true&country=DE&level=anonymous,elite&type=http&limit=5']
 
 # from https://psf.player.v0.maxdome.cloud/dist/playback-source-fetcher.min.js

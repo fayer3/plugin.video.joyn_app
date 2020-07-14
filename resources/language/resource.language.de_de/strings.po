@@ -162,6 +162,19 @@ msgctxt "#32043"
 msgid "Unsupported protocol: '{0}'. only http/https is supported."
 msgstr "Nicht unterstütztes Protokoll: '{0}'. Nur http/https wird unterstützt."
 
+
+msgctxt "#32044"
+msgid "Checking for Proxies"
+msgstr "Prüfe proxies"
+
+msgctxt "#32045"
+msgid "current site: {0}"
+msgstr "momentane Webseite: {0}"
+
+msgctxt "#32046"
+msgid "current site: {0}[CR]checking proxy: {1}[CR]{2}/{3}"
+msgstr "momentane Webseite: {0}[CR]prüfe Proxy: {1}[CR]{2}/{3}"
+
 msgctxt "#32102"
 msgid "number of simultanious network requests"
 msgstr "Anzahl an gleichzeitigen Netzwerkanfragen"

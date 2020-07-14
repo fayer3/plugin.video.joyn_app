@@ -59,6 +59,12 @@
 - option hinzugefügt, um einen neuen Zugriffstoken bei der nächsten Video Abfrage abzufragen
 0.4.8:
 - Fehler behoben, wenn keine Proxies zum abfragen vorhanden sind
+0.4.9:
+- Proxy Abruf überarbeitet:
+  - Fehler behoben, welcher Proxies übersprungen hat
+  - Fehler behoben, welcher nicht funktionierende Proxies als gut eingestuft hat
+  - es wird nun ein Dialog angezeigt, welcher Proxy gerade überprüft wird
+  - zwei weiter webseiten zum Proxy abrufen hinzugefügt
         </news>
         <assets>
             <icon>resources/icon.png</icon>
