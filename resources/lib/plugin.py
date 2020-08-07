@@ -1531,14 +1531,18 @@ def get_new_proxy():
             data = get_url(site, key=False, critical=False)
             if data != '':
                 newproxy = json.loads(data)
+                log('original proxies: {0}'.format(json.dumps(newproxy)))
                 if not 'data' in newproxy:
-                    newproxy = {'data': [newproxy]}
+                    if 'proxies' in newproxy:
+                        newproxy = {'data': newproxy['proxies']}
+                    else:
+                        newproxy = {'data': [newproxy]}
                 i = 0
                 for proxy in newproxy['data']:
                     i += 1
                     if (progress.iscanceled()):
                         return found_new
-                    if not 'error' in proxy:
+                    if not 'error' in proxy and 'ip' in proxy and 'port' in proxy:
                         progress.update(i*100/len(newproxy['data']), line1=kodiutils.get_string(32046).format(sitetext, '{0}://{1}:{2}'.format(proxy.get('type', proxy.get('protocol', proxy.get('proxyType'))), proxy['ip'], proxy['port']), i, len(newproxy['data'])))
                         if (proxy['ip'] != ip or proxy['port'] != port) and proxy['ip'] != '0.0.0.0':
                             if test_proxy('{0}://{1}:{2}'.format(proxy.get('type', proxy.get('protocol', proxy.get('proxyType'))), proxy['ip'], proxy['port'])):

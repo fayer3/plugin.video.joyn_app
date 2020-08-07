@@ -70,3 +70,5 @@ v0.4.9:
   - fixed bug, which marked bad proxies as good
   - a dialog is now shown while checking proxies
   - added two additional proxy sites
+v0.4.10:
+- fix error when getting proxies from 'freshproxies.net'
