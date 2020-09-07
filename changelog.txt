@@ -72,3 +72,6 @@ v0.4.9:
   - added two additional proxy sites
 v0.4.10:
 - fix error when getting proxies from 'freshproxies.net'
+v0.4.11:
+- fix error that prevented retrieving of videos.
+- added available since/until to movie description.

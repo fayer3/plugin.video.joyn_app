@@ -480,6 +480,33 @@ def add_movie(asset):
             return
         if svod == 0:
             name = u'[PLUS+] ' + name
+    airDATE = None
+    toDATE = None
+    airTIMES = u''
+    endTIMES = u''
+    Note_1 = u''
+    Note_2 = u''
+    if 'startsAt' in asset and asset['startsAt'] != None:
+        local_tz = tzlocal.get_localzone()
+        airDATES = datetime(1970, 1, 1) + timedelta(seconds=int(asset['startsAt']))
+        airDATES = pytz.utc.localize(airDATES)
+        airDATES = airDATES.astimezone(local_tz)
+        airTIMES = airDATES.strftime('%d.%m.%Y - %H:%M')
+        airDATE = airDATES.strftime('%d.%m.%Y')
+    
+    if 'endsAt' in asset and asset['endsAt'] != None:
+        local_tz = tzlocal.get_localzone()
+        endDATES = datetime(1970, 1, 1) + timedelta(seconds=int(asset['endsAt']))
+        endDATES = pytz.utc.localize(endDATES)
+        endDATES = endDATES.astimezone(local_tz)
+        endTIMES = endDATES.strftime('%d.%m.%Y - %H:%M')
+        toDATE =  endDATES.strftime('%d.%m.%Y')
+    if airTIMES and endTIMES: 
+        Note_1 = kodiutils.get_string(32047).format(airTIMES, endTIMES)
+    elif airTIMES: 
+        Note_1 = kodiutils.get_string(32048).format(airTIMES)
+    elif endTIMES: 
+        Note_1 = kodiutils.get_string(32018).format(endTIMES)
     listitem = ListItem(name)
     # get images
     icon=''
@@ -515,6 +542,8 @@ def add_movie(asset):
     if 'copyrights' in asset and asset['copyrights'] != None and len(asset['copyrights']) > 0:
         if kodiutils.get_setting_as_bool('copyright_in_description'):
             Note_2 += kodiutils.get_string(32038).format(', '.join(asset['copyrights']))
+    if Note_1:
+        infoLabels['Plot'] = Note_1 + infoLabels['Plot']
     if Note_2:
         infoLabels['Plot'] = infoLabels['Plot'] + '[CR][CR]' + Note_2
     if 'productionYear' in asset and asset['productionYear'] != None:
@@ -915,14 +944,15 @@ def play_video(video_id, tvshow_id, brand, duration):
         kodiutils.notification(u'ERROR', kodiutils.get_string(32025))
         setResolvedUrl(plugin.handle, False, ListItem('none'))
         return
-    player_config_data = json.loads(get_url(ids.player_config_url, key = False, cache = True, critical = True))
-    player_config = json.loads(base64.b64decode(xxtea.decryptHexToStringss(player_config_data['toolkit']['psf'], ids.xxtea_key)))
+    #player_config_data = json.loads(get_url(ids.player_config_url, key = False, cache = False, critical = True))
+    #player_config = player_config_data['toolkit']['psf']#json.loads(base64.b64decode(xxtea.decryptHexToStringss(player_config_data['toolkit']['psf'], ids.xxtea_key)))
     nuggvars_data = get_url(ids.nuggvars_url, key = False, critical = False)
     psf_config = json.loads(get_url(ids.psf_config_url, key = False, critical = True))
     playoutBaseUrl = psf_config['default']['vod']['playoutBaseUrl']
     entitlementBaseUrl = psf_config['default']['vod']['entitlementBaseUrl']
 
-    postdata = u'{{"access_id":"{access_id}","content_id":"{content_id}","content_type":"VOD"}}'.format(access_id = player_config['accessId'], content_id = video_id)
+    #postdata = u'{{"access_id":"{access_id}","content_id":"{content_id}","content_type":"VOD"}}'.format(access_id = player_config['accessId'], content_id = video_id)
+    postdata = u'{{"content_id":"{content_id}","content_type":"VOD"}}'.format(content_id = video_id)
     get_accesstoken()
     entitlement_headers = {ids.entitlement_token_header: ids.entitlement_token_header_format.format(token_type = kodiutils.get_setting('token_type'), token = kodiutils.get_setting('token'))}
     entitlement_headers['x-api-key'] = psf_config['default']['vod']['apiGatewayKey']
@@ -939,9 +969,9 @@ def play_video(video_id, tvshow_id, brand, duration):
 
     nuggvars = nuggvars_data.replace('{"','').replace(',"url":""}','').replace('":','=').replace(',"','&')
 
-    clientData = base64.b64encode((ids.clientdata.format(nuggvars=nuggvars[:-1], episode_id=video_id, duration=duration, brand=brand, tvshow_id=tvshow_id)).encode('utf-8')).decode('utf-8')
+    clientData = base64.b64encode((ids.clientdata.format(nuggvars=nuggvars[:-1], episode_id=video_id, duration=duration*1000, brand=brand, tvshow_id=tvshow_id)).encode('utf-8')).decode('utf-8')
     log(u'clientData: {0}'.format(clientData))
-
+    
     sig = u'{episode_id},{entitlement_token},{clientData}{xxtea_key_hex}'.format(episode_id=video_id, entitlement_token=entitlement_token_data['entitlement_token'], clientData=clientData, xxtea_key_hex=codecs.encode(ids.xxtea_key.encode('utf-8'),'hex').decode('utf-8'))
     sig = hashlib.sha1(sig.encode('UTF-8')).hexdigest()
 
@@ -1006,8 +1036,8 @@ def play_live(stream_id, brand, _try=1):
         kodiutils.notification(u'ERROR', kodiutils.get_string(32025))
         setResolvedUrl(plugin.handle, False, ListItem('none'))
         return
-    player_config_data = json.loads(get_url(ids.player_config_url, key = False, cache = True, critical = True))
-    player_config = json.loads(base64.b64decode(xxtea.decryptHexToStringss(player_config_data['toolkit']['psf'], ids.xxtea_key)))
+    #player_config_data = json.loads(get_url(ids.player_config_url, key = False, cache = True, critical = True))
+    #player_config = json.loads(base64.b64decode(xxtea.decryptHexToStringss(player_config_data['toolkit']['psf'], ids.xxtea_key)))
     psf_config = json.loads(get_url(ids.psf_config_url, key = False, critical = True))
     playoutBaseUrl = psf_config['default']['live']['playoutBaseUrl']
     entitlementBaseUrl = psf_config['default']['live']['entitlementBaseUrl']
@@ -1016,7 +1046,8 @@ def play_live(stream_id, brand, _try=1):
     #    # decode utf-8
     #    brand = brand.decode('utf-8')
 
-    postdata = u'{{"access_id":"{accessId}","content_id":"{stream_id}","content_type":"LIVE"}}'.format(accessId=player_config['accessId'], stream_id=stream_id)
+    #postdata = u'{{"access_id":"{accessId}","content_id":"{stream_id}","content_type":"LIVE"}}'.format(accessId=player_config['accessId'], stream_id=stream_id)
+    postdata = u'{{"content_id":"{stream_id}","content_type":"LIVE"}}'.format(stream_id=stream_id)
     #'{"access_id":"'+ player_config['accessId']+'","content_id":"'+stream_id+'","content_type":"LIVE"}'
     get_accesstoken()
     entitlement_headers = {ids.entitlement_token_header: ids.entitlement_token_header_format.format(token_type = kodiutils.get_setting('token_type'), token = kodiutils.get_setting('token'))}
@@ -1323,7 +1354,7 @@ def get_url(url, headers={}, key=True, cache=False, critical=False):
         ids.set_config_cache(url, data, request.info().get('Last-Modified'))
     return data
 
-def post_url(url, postdata, headers={}, json = False, key = False, critical=False, returnError=False, proxy=False, newproxy=True):
+def post_url(url, postdata, headers={}, json = False, key = False, critical=False, returnError=False, proxy=False, newproxy=True, hex=False):
     log(u'post: {0}, {1}'.format(url, headers))
     new_headers = {}
     new_headers.update(headers)
@@ -1364,7 +1395,10 @@ def post_url(url, postdata, headers={}, json = False, key = False, critical=Fals
                 if critical:
                     return sys.exit(0)
         else:
-            request = urlopen(Request(url, headers=new_headers, data=postdata.encode('utf-8')))
+            if hex:
+                request = urlopen(Request(url, headers=new_headers, data=postdata))
+            else:
+                request = urlopen(Request(url, headers=new_headers, data=postdata.encode('utf-8')))
     except HTTPError as e:
         failure = str(e)
         if hasattr(e, 'code'):
@@ -1410,7 +1444,10 @@ def post_url(url, postdata, headers={}, json = False, key = False, critical=Fals
         data = deflatedContent.read()
     else:
         data = request.read()
-    return data.decode('utf-8')
+    if hex:
+        return data
+    else:
+        return data.decode('utf-8')
 
 def handle_wait(time, commercials=1, url='', request_interval = 1000):
     log(u'waiting for {0} seconds'.format(time/1000.0))

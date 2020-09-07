@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<addon id="plugin.video.joyn_app" name="Joyn" version="0.4.10" provider-name="fayer3">
+<addon id="plugin.video.joyn_app" name="Joyn" version="0.4.11" provider-name="fayer3">
     <requires>
         <import addon="xbmc.python" version="2.25.0"/>
         <import addon="script.module.routing" version="0.2.0"/>
@@ -67,6 +67,9 @@
   - zwei weiter webseiten zum Proxy abrufen hinzugefügt
 0.4.10:
 - fehler mit Proxy abrufen von 'freshproxies.net' behoben
+0.4.11:
+- fehler behoben der abrufen von Videos verhindert hat.
+- verfügbar seit/bis zu Filmbeschreibungen hinzugefügt.
         </news>
         <assets>
             <icon>resources/icon.png</icon>

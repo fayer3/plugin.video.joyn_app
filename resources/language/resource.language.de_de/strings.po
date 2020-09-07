@@ -175,6 +175,14 @@ msgctxt "#32046"
 msgid "current site: {0}[CR]checking proxy: {1}[CR]{2}/{3}"
 msgstr "momentane Webseite: {0}[CR]prüfe Proxy: {1}[CR]{2}/{3}"
 
+msgctxt "#32047"
+msgid "Available since: [COLOR chartreuse]{0:s}[/COLOR][CR]Available until: [COLOR chartreuse]{1:s}[/COLOR][CR][CR]"
+msgstr "Verfügbar seit: [COLOR chartreuse]{0:s}[/COLOR][CR]Verfügbar bis: [COLOR chartreuse]{1:s}[/COLOR][CR][CR]"
+
+msgctxt "#32048"
+msgid "Available since: [COLOR chartreuse]{0:s}[/COLOR][CR][CR]"
+msgstr "Verfügbar seit: [COLOR chartreuse]{0:s}[/COLOR][CR][CR]"
+
 msgctxt "#32102"
 msgid "number of simultanious network requests"
 msgstr "Anzahl an gleichzeitigen Netzwerkanfragen"
