@@ -989,7 +989,7 @@ def play_video(video_id, tvshow_id, brand, duration):
         # get base url
         base_urls = re.findall('<BaseURL>(.*?)</BaseURL>',video_url_data)
         if len(base_urls) > 0 and base_urls[0].startswith('http'):
-            video_url = base_urls[0] + u'.mpd|User-Agent='+ids.video_useragent
+            video_url = base_urls[0] + u'.mpd?filter=(type%3D%3D%22video%22)%7C%7C(true)|User-Agent='+ids.video_useragent
         else:
             kodiutils.notification(u'INFO', kodiutils.get_string(32005))
             setResolvedUrl(plugin.handle, False, playitem)

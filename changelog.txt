@@ -75,3 +75,5 @@ v0.4.10:
 v0.4.11:
 - fix error that prevented retrieving of videos.
 - added available since/until to movie description.
+v0.4.12:
+- fixed VOD request thanks to hrickes.
