@@ -55,8 +55,9 @@ except ImportError:
 try:
     from urllib.request import Request, urlopen, build_opener, ProxyHandler
     from urllib.error import HTTPError, URLError
-    from urllib.parse import quote, unquote
+    from urllib.parse import quote, unquote, urlparse, parse_qs
 except ImportError:
+    from urlparse import urlparse, parse_qs
     from urllib import quote, unquote
     from urllib2 import Request, urlopen, HTTPError, URLError, build_opener, ProxyHandler
 
@@ -985,17 +986,30 @@ def play_video(video_id, tvshow_id, brand, duration):
         #got add, extract mpd
         log(u'stream with add: {0}'.format(video_data['videoUrl']))
         video_url = video_data['videoUrl']
-        video_url_data = get_url(video_url, headers={'User-Agent': ids.video_useragent}, key = False, critical = True)
-        # get base url
-        base_urls = re.findall('<BaseURL>(.*?)</BaseURL>',video_url_data)
-        if len(base_urls) > 0 and base_urls[0].startswith('http'):
-            video_url = base_urls[0] + u'.mpd?filter=(type%3D%3D%22video%22)%7C%7C(true)|User-Agent='+ids.video_useragent
-        else:
-            kodiutils.notification(u'INFO', kodiutils.get_string(32005))
-            setResolvedUrl(plugin.handle, False, playitem)
-            return
+        
+        found = False
+        #parse url an look if viedo url with filter is included
+        parsed_url = urlparse(video_url)
+        if parsed_url[4]:
+            parsed_query = parse_qs(parsed_url[4])
+            if 'yo.p.fn' in parsed_query and len(parsed_query['yo.p.fn']) > 0:
+                found = True
+                #add missing padding
+                base64_url_with_padding = parsed_query['yo.p.fn'][0] + '==='
+                log(u'base64 url: {0}'.format(base64_url_with_padding))
+                video_url = base64.b64decode(base64_url_with_padding)
+        if not found:
+            video_url_data = get_url(video_url, headers={'User-Agent': ids.video_useragent}, key = False, critical = True)
+            # get base url
+            base_urls = re.findall('<BaseURL>(.*?)</BaseURL>',video_url_data)
+            if len(base_urls) > 0 and base_urls[0].startswith('http'):
+                video_url = base_urls[0] + u'.mpd?filter=(type%3D%3D%22video%22)%7C%7C(true)|User-Agent='+ids.video_useragent
+            else:
+                kodiutils.notification(u'INFO', kodiutils.get_string(32005))
+                setResolvedUrl(plugin.handle, False, playitem)
+                return
     else:
-        video_url = video_data['videoUrl'].rpartition('?')[0] + u'|User-Agent='+ids.video_useragent
+        video_url = video_data['videoUrl']+ u'|User-Agent='+ids.video_useragent#.rpartition('?')[0] + u'|User-Agent='+ids.video_useragent
 
     is_helper = None
     if video_data['drm'] != u'widevine':

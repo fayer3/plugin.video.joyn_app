@@ -77,3 +77,5 @@ v0.4.11:
 - added available since/until to movie description.
 v0.4.12:
 - fixed VOD request thanks to hrickes.
+v0.4.13:
+- change VOD request to the one received from the server, this limits playback in most cases to SD resolution without Plus+.
