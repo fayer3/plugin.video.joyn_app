@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<addon id="plugin.video.joyn_app" name="Joyn" version="0.4.13" provider-name="fayer3">
+<addon id="plugin.video.joyn_app" name="Joyn" version="0.4.14" provider-name="fayer3">
     <requires>
         <import addon="xbmc.python" version="2.25.0"/>
         <import addon="script.module.routing" version="0.2.0"/>
@@ -74,6 +74,8 @@
 - VOD Abfrage repariert dank hrickes.
 0.4.13:
 - ändernder VOD Abfrage zu der vom Server erhaltenen, dies limitiert tie Auflösung auf SD ohne Plus+.
+0.4.14:
+- beheben von padding Fehler.
         </news>
         <assets>
             <icon>resources/icon.png</icon>

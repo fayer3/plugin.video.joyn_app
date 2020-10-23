@@ -995,9 +995,9 @@ def play_video(video_id, tvshow_id, brand, duration):
             if 'yo.p.fn' in parsed_query and len(parsed_query['yo.p.fn']) > 0:
                 found = True
                 #add missing padding
-                base64_url_with_padding = parsed_query['yo.p.fn'][0] + '==='
+                base64_url_with_padding = parsed_query['yo.p.fn'][0] + ('='*(4-len(parsed_query['yo.p.fn'][0])%4))
                 log(u'base64 url: {0}'.format(base64_url_with_padding))
-                video_url = base64.b64decode(base64_url_with_padding)
+                video_url = base64.urlsafe_b64decode(str(base64_url_with_padding))
         if not found:
             video_url_data = get_url(video_url, headers={'User-Agent': ids.video_useragent}, key = False, critical = True)
             # get base url
