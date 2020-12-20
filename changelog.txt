@@ -81,3 +81,5 @@ v0.4.13:
 - change VOD request to the one received from the server, this limits playback in most cases to SD resolution without Plus+.
 v0.4.14:
 - fix padding error.
+v0.4.15:
+- fix playback of livestreams

@@ -1097,7 +1097,7 @@ def play_live(stream_id, brand, _try=1):
     
     video_url = video_data['videoUrl']
     video_url_data = u''
-    if 'vmap'in video_data and video_data['vmap'] != None:
+    if 'vmap'in video_data and video_data['vmap']:
         #got add, extract mpd
         log(u'stream with add: {0}'.format(video_url))
         #return
