@@ -183,6 +183,22 @@ msgctxt "#32048"
 msgid "Available since: [COLOR chartreuse]{0:s}[/COLOR][CR][CR]"
 msgstr "Verfügbar seit: [COLOR chartreuse]{0:s}[/COLOR][CR][CR]"
 
+msgctxt "#32049"
+msgid "contains product placement[CR]"
+msgstr "enthält Produktplazierungen[CR]"
+
+msgctxt "#32050"
+msgid "discover series"
+msgstr "Serien Entdecken"
+
+msgctxt "#32051"
+msgid "discover movies"
+msgstr "Filme Entdecken"
+
+msgctxt "#32052"
+msgid "discover sport"
+msgstr "Sport Entecken"
+
 msgctxt "#32102"
 msgid "number of simultanious network requests"
 msgstr "Anzahl an gleichzeitigen Netzwerkanfragen"
