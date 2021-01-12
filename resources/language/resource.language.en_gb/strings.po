@@ -176,11 +176,11 @@ msgstr ""
 
 msgctxt "#32047"
 msgid "Available since: [COLOR chartreuse]{0:s}[/COLOR][CR]Available until: [COLOR chartreuse]{1:s}[/COLOR][CR][CR]"
-msgstr "Verfügbar seit: [COLOR chartreuse]{0:s}[/COLOR][CR]Verfügbar bis: [COLOR chartreuse]{1:s}[/COLOR][CR][CR]"
+msgstr ""
 
 msgctxt "#32048"
 msgid "Available since: [COLOR chartreuse]{0:s}[/COLOR][CR][CR]"
-msgstr "Verfügbar seit: [COLOR chartreuse]{0:s}[/COLOR][CR][CR]"
+msgstr ""
 
 msgctxt "#32049"
 msgid "contains product placement[CR]"
