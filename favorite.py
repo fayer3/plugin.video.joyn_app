@@ -23,7 +23,7 @@ def log(info):
 logger = logging.getLogger(xbmcaddon.Addon().getAddonInfo('id'))
 kodilogging.config()
 
-__profile__ = xbmc.translatePath(xbmcaddon.Addon().getAddonInfo('profile'))
+__profile__ = xbmcvfs.translatePath(xbmcaddon.Addon().getAddonInfo('profile'))
 
 if not xbmcvfs.exists(__profile__):
     xbmcvfs.mkdirs(__profile__)

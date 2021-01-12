@@ -176,11 +176,27 @@ msgstr ""
 
 msgctxt "#32047"
 msgid "Available since: [COLOR chartreuse]{0:s}[/COLOR][CR]Available until: [COLOR chartreuse]{1:s}[/COLOR][CR][CR]"
-msgstr "Verfügbar seit: [COLOR chartreuse]{0:s}[/COLOR][CR]Verfügbar bis: [COLOR chartreuse]{1:s}[/COLOR][CR][CR]"
+msgstr ""
 
 msgctxt "#32048"
 msgid "Available since: [COLOR chartreuse]{0:s}[/COLOR][CR][CR]"
-msgstr "Verfügbar seit: [COLOR chartreuse]{0:s}[/COLOR][CR][CR]"
+msgstr ""
+
+msgctxt "#32049"
+msgid "contains product placement[CR]"
+msgstr ""
+
+msgctxt "#32050"
+msgid "discover series"
+msgstr ""
+
+msgctxt "#32051"
+msgid "discover movies"
+msgstr ""
+
+msgctxt "#32052"
+msgid "discover sport"
+msgstr ""
 
 msgctxt "#32101"
 msgid "Debug"

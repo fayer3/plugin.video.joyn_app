@@ -83,3 +83,8 @@ v0.4.14:
 - fix padding error.
 v0.4.15:
 - fix playback of livestreams
+v0.4.16:
+- update to state of Android app 5.18.1
+- add support for Sport videos
+- add support for 'Themen für dich'
+- add support for discover series, movies and sport

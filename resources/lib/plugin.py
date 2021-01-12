@@ -47,10 +47,8 @@ except ImportError:
     multiprocess = False
 
 # import of modules that are different between PY2 and PY3
-try:
-    from StringIO import StringIO
-except ImportError:
-    from io import BytesIO as StringIO
+
+from io import BytesIO
 
 try:
     from urllib.request import Request, urlopen, build_opener, ProxyHandler
@@ -72,8 +70,8 @@ logger = logging.getLogger(ADDON.getAddonInfo('id'))
 kodilogging.config()
 plugin = routing.Plugin()
 
-__profile__ = xbmc.translatePath(ADDON.getAddonInfo('profile'))
-ADDON_PATH = xbmc.translatePath(ADDON.getAddonInfo('path'))
+__profile__ = xbmcvfs.translatePath(ADDON.getAddonInfo('profile'))
+ADDON_PATH = xbmcvfs.translatePath(ADDON.getAddonInfo('path'))
 
 if not xbmcvfs.exists(__profile__):
     xbmcvfs.mkdirs(__profile__)
@@ -106,7 +104,13 @@ def index():
             elif item['__typename'] == 'HeroLane':
                 name = kodiutils.get_string(32001)
             addDirectoryItem(plugin.handle,plugin.url_for(
-                show_fetch, fetch_id=item['id'], type=item['__typename']), ListItem(name), True)
+                show_fetch, fetch_id=item['id'], fetch_type=item['__typename'], override_live='True'), ListItem(name), True)
+    addDirectoryItem(plugin.handle, plugin.url_for(
+        show_page, '/serien'), ListItem(kodiutils.get_string(32050)), True)
+    addDirectoryItem(plugin.handle, plugin.url_for(
+        show_page, '/filme'), ListItem(kodiutils.get_string(32051)), True)
+    addDirectoryItem(plugin.handle, plugin.url_for(
+        show_page, '/sport'), ListItem(kodiutils.get_string(32052)), True)
     addDirectoryItem(plugin.handle, plugin.url_for(
         show_epg), ListItem('EPG'), True)
     addDirectoryItem(plugin.handle, plugin.url_for(
@@ -115,6 +119,20 @@ def index():
         show_category, 'favorites'), ListItem(kodiutils.get_string(32007)), True)
     addDirectoryItem(plugin.handle, plugin.url_for(
         open_settings), ListItem(kodiutils.get_string(32008)))
+    endOfDirectory(plugin.handle)
+    
+@plugin.route('/page/page_path=<path:page_path>')
+def show_page(page_path):
+    content = json.loads(post_url(ids.post_url, ids.post_request.format(variables=ids.page_variables.format(page_path=page_path),query = ids.overview_query), key = True, json = True, critical = True))
+    for item in content['data']['page']['blocks']:
+        if item['__typename'] != 'ResumeLane' and item['__typename'] != 'BookmarkLane' and item['__typename'] != 'RecoForYouLane':
+            name = 'Folder'
+            if 'headline' in item:
+                name = item['headline']
+            elif item['__typename'] == 'HeroLane':
+                name = kodiutils.get_string(32001)
+            addDirectoryItem(plugin.handle,plugin.url_for(
+                show_fetch, fetch_id=item['id'], fetch_type=item['__typename'], override_live='False'), ListItem(name), True)
     endOfDirectory(plugin.handle)
 
 @plugin.route('/search')
@@ -189,14 +207,18 @@ def get_epg_listitem(epgdata, start_in_label = False):
 def show_info():
     xbmc.executebuiltin('Action(Info)')
 
-@plugin.route('/fetch/id=<fetch_id>/type=<type>')
-def show_fetch(fetch_id, type):
+@plugin.route('/fetch/id=<fetch_id>/type=<fetch_type>/override_live=<override_live>')
+def show_fetch(fetch_id, fetch_type, override_live):
+    add_fetch(fetch_id, fetch_type, override_live)
+    endOfDirectory(plugin.handle)
+
+def add_fetch(fetch_id, fetch_type, override_live):
     i = 0
     while True:
         #content = json.loads(get_url(ids.fetch_url.format(blockId=fetch_id, offset = ids.offset*i), critical=True))
         content = json.loads(post_url(ids.post_url, ids.post_request.format(variables=ids.fetch_variables.format(blockId=fetch_id, offset = ids.offset*i), query = ids.fetch_query), key = True, json = True, critical=False))
         if('data' in content and 'block' in content['data'] and 'assets' in content['data']['block']):
-            if content['data']['block']['__typename'] == 'LiveLane':
+            if content['data']['block']['__typename'] == 'LiveLane' and override_live == 'True':
                 add_livestreams();
                 endOfDirectory(plugin.handle)
                 return
@@ -206,7 +228,6 @@ def show_fetch(fetch_id, type):
         if len(content['data']['block']['assets']) != ids.offset:
             break
         i += 1
-    endOfDirectory(plugin.handle)
 
 def add_from_fetch(content):
     for asset in content:
@@ -220,6 +241,10 @@ def add_from_fetch(content):
             add_compilation(asset)
         elif asset['__typename'] == 'Movie':
             add_movie(asset)
+        elif asset['__typename'] == 'Teaser':
+            add_teaser(asset)
+        elif  asset['__typename'] == 'SportsMatch':
+            add_sportsMatch(asset)
         else:
             kodiutils.notification("ERROR", "unknown type " + asset['__typename'])
             log("unknown type " + asset['__typename'])
@@ -332,6 +357,38 @@ def add_compilation(asset):
         show_compilation, compilation_id=asset['id']), asset['title'], u'', icon, poster, thumbnail, fanart)
     addDirectoryItem(plugin.handle, plugin.url_for(
         show_compilation, compilation_id=asset['id']), listitem, True)
+
+def add_teaser(asset):
+    listitem = ListItem(asset['title'])
+    description = ''
+    if 'description' in asset and asset['description'] != None:
+        #remove tags from description
+        description = re.sub(re.compile('<.*?>'), '', asset['description'])
+    
+    # get images
+    icon=''
+    poster = ''
+    fanart = ''
+    thumbnail = ''
+    for image in asset['teaserImages']:
+        if image['type'] == 'PRIMARY':
+            thumbnail = ids.image_url.format(image['url'])
+        elif image['type'] == 'ART_LOGO':
+            icon = ids.image_url.format(image['url'])
+        elif image['type'] == 'HERO_LANDSCAPE':
+            fanart = ids.image_url.format(image['url'])
+        elif image['type'] == 'HERO_PORTRAIT':
+            poster = ids.image_url.format(image['url'])
+    if not poster and thumbnail:
+        poster = thumbnail
+    if not fanart and thumbnail:
+        fanart = thumbnail
+    if not fanart and thumbnail:
+        icon = thumbnail
+    listitem.setArt({'icon': icon, 'thumb': thumbnail, 'poster': poster, 'fanart': fanart})
+    listitem.setInfo(type='Video', infoLabels={'Title': asset['title'], 'Plot': description})
+    addDirectoryItem(plugin.handle, plugin.url_for(
+        show_page, page_path=asset['path']), listitem, True)
 
 def add_livestream(asset):
     brand = u''
@@ -454,7 +511,14 @@ def add_livestreams():
             infoLabels.update({'plot': u'{0}[CR]{1}'.format(infoLabels.get('tvShowTitle') if not infoLabels.get('title') or infoLabels.get('tvShowTitle') == infoLabels.get('title') else u'[COLOR blue]{0}[/COLOR]  {1}'.format(infoLabels.get('tvShowTitle'), infoLabels.get('title')), infoLabels.get('plot'))})
             if kodiutils.get_setting_as_bool('channel_name_in_stream_title'):
                 infoLabels['title'] = u'[COLOR lime]{0}[/COLOR]  {1}'.format(brand, infoLabels.get('plot'))
-
+        
+        if 'markings' in item and item['markings'] != None and 'PLUS_ONLY' in item['markings']:
+            svod = kodiutils.get_setting_as_int('svod')
+            if svod == 2:
+                continue
+            if svod == 0:
+                label = u'[PLUS+] ' + label
+        
         listitem = ListItem(label)
         listitem.setArt(art)
         listitem.setProperty('IsPlayable', 'true')
@@ -462,7 +526,7 @@ def add_livestreams():
         livestreams.append((plugin.url_for(
             play_live, stream_id=item['livestream']['id'], brand=quote(brand.encode('ascii', 'xmlcharrefreplace'))), listitem))
 
-    livestreams.sort(key=lambda x: x[1].getLabel().lower(), reverse=False)
+    livestreams.sort(key=lambda x: x[1].getLabel().replace('[PLUS+] ', '').lower(), reverse=False)
 
     addDirectoryItems(plugin.handle, livestreams)
 
@@ -540,6 +604,8 @@ def add_movie(asset):
         infoLabels['mpaa'] = asset['ageRating']['minAge']
         if kodiutils.get_setting_as_bool('age_in_description'):
             Note_2 += kodiutils.get_string(32037).format(infoLabels['mpaa'])
+    if 'productPlacement' in asset and asset['productPlacement'] != None and asset['productPlacement']:
+        Note_2 += u'productPlacement: ' + str(asset['productPlacement'])
     if 'copyrights' in asset and asset['copyrights'] != None and len(asset['copyrights']) > 0:
         if kodiutils.get_setting_as_bool('copyright_in_description'):
             Note_2 += kodiutils.get_string(32038).format(', '.join(asset['copyrights']))
@@ -556,6 +622,104 @@ def add_movie(asset):
     listitem.addContextMenuItems([('Queue', 'Action(Queue)')])
     addDirectoryItem(plugin.handle, plugin.url_for(
         play_movie, movie_id=asset['id']), listitem)
+
+def add_sportsMatch(asset):
+    infoLabels = {}
+    Note_2 = u''
+    infoLabels['mediatype'] = 'episode'
+    name = ''
+    name = asset['title']
+    infoLabels['Title'] = name
+    if len(asset['licenseTypes']) == 1 and 'SVOD' in asset['licenseTypes']:
+        svod = kodiutils.get_setting_as_int('svod')
+        if svod == 2:
+            return
+        if svod == 0:
+            name = u'[PLUS+] ' + name
+    airDATE = None
+    toDATE = None
+    airTIMES = u''
+    endTIMES = u''
+    Note_1 = u''
+    Note_2 = u''
+    Note_3 = u''
+    if 'startsAt' in asset and asset['startsAt'] != None:
+        local_tz = tzlocal.get_localzone()
+        airDATES = datetime(1970, 1, 1) + timedelta(seconds=int(asset['startsAt']))
+        airDATES = pytz.utc.localize(airDATES)
+        airDATES = airDATES.astimezone(local_tz)
+        airTIMES = airDATES.strftime('%d.%m.%Y - %H:%M')
+        airDATE = airDATES.strftime('%d.%m.%Y')
+    
+    if 'endsAt' in asset and asset['endsAt'] != None:
+        local_tz = tzlocal.get_localzone()
+        endDATES = datetime(1970, 1, 1) + timedelta(seconds=int(asset['endsAt']))
+        endDATES = pytz.utc.localize(endDATES)
+        endDATES = endDATES.astimezone(local_tz)
+        endTIMES = endDATES.strftime('%d.%m.%Y - %H:%M')
+        toDATE =  endDATES.strftime('%d.%m.%Y')
+    if airTIMES and endTIMES: 
+        Note_1 = kodiutils.get_string(32047).format(airTIMES, endTIMES)
+    elif airTIMES: 
+        Note_1 = kodiutils.get_string(32048).format(airTIMES)
+    elif endTIMES: 
+        Note_1 = kodiutils.get_string(32018).format(endTIMES)
+    listitem = ListItem(name)
+    # get images
+    icon=''
+    poster = ''
+    fanart = ''
+    thumbnail = ''
+    for image in asset['images']:
+        if image['type'] == 'PRIMARY':
+            thumbnail = ids.image_url.format(image['url'])
+        elif image['type'] == 'ART_LOGO':
+            icon = ids.image_url.format(image['url'])
+        elif image['type'] == 'HERO_LANDSCAPE':
+            fanart = ids.image_url.format(image['url'])
+        elif image['type'] == 'HERO_PORTRAIT':
+            poster = ids.image_url.format(image['url'])
+    if not poster and thumbnail:
+        poster = thumbnail
+    if not fanart and thumbnail:
+        fanart = thumbnail
+    if not fanart and thumbnail:
+        icon = thumbnail
+    
+    if 'description' in asset and asset['description'] != None:
+        infoLabels['Plot'] = asset['description']
+    if 'sportsCompetition' in asset and asset['sportsCompetition'] != None:
+        Note_3 += asset['sportsCompetition']['title']
+    
+    if 'sports' in asset and asset['sports'] != None:
+        infoLabels['genre'] = []
+        for sport in asset['sports']:
+            Note_3 += ' - ' + sport['title']
+            infoLabels['genre'].append(sport['title'])
+    
+    if Note_3 != u'':
+        Note_3 += '[CR]'
+    if 'sportsStage' in asset and asset['sportsStage'] != None:
+        Note_3 += asset['sportsStage']['title']+'[CR]'
+    if 'ageRating' in asset and asset['ageRating'] != None:
+        infoLabels['mpaa'] = asset['ageRating']['minAge']
+        if kodiutils.get_setting_as_bool('age_in_description'):
+            Note_2 += kodiutils.get_string(32037).format(infoLabels['mpaa'])
+    if Note_3:
+        infoLabels['Plot'] = Note_3 + '[CR]' + infoLabels['Plot']
+    if Note_1:
+        infoLabels['Plot'] = Note_1 + infoLabels['Plot']
+    if Note_2:
+        infoLabels['Plot'] = infoLabels['Plot'] + '[CR][CR]' + Note_2
+    if 'productionYear' in asset and asset['productionYear'] != None:
+        infoLabels['year'] = asset['productionYear']
+        
+    listitem.setArt({'icon': icon, 'thumb': thumbnail, 'poster': poster, 'fanart': fanart})
+    listitem.setInfo(type='Video', infoLabels=infoLabels)
+    listitem.setProperty('IsPlayable', 'true')
+    listitem.addContextMenuItems([('Queue', 'Action(Queue)')])
+    addDirectoryItem(plugin.handle, plugin.url_for(
+        play_sports_match, asset_id=asset['id']), listitem)
 
 @plugin.route('/channel/id=<channel_path>')
 def show_channel(channel_path):
@@ -938,6 +1102,13 @@ def play_movie(movie_id):
     #content = json.loads(post_url(ids.post_url, ids.compilation_item_post.format(id=episode_id), key = True, json = True, critical = True))
     content = content['data']['movie']
     play_video(content['video']['id'], content['id'], content['tracking']['brand'], content['video']['duration'])
+
+@plugin.route('/video/sprtsmatch/<asset_id>')
+def play_sports_match(asset_id):
+    content = json.loads(post_url(ids.post_url, ids.post_request.format(variables=ids.sport_match_variables.format(id=asset_id),query = ids.sport_match_query), key = True, json = True, critical = True))
+    #content = json.loads(post_url(ids.post_url, ids.compilation_item_post.format(id=episode_id), key = True, json = True, critical = True))
+    content = content['data']['sportsMatch']
+    play_video(content['video']['id'], content['id'], content['tracking']['brand'], content['video']['duration'])
     
 def play_video(video_id, tvshow_id, brand, duration):
     if LooseVersion('18.0') > LooseVersion(xbmc.getInfoLabel('System.BuildVersion')):
@@ -1034,7 +1205,7 @@ def play_video(video_id, tvshow_id, brand, duration):
         #playitem.path= = ListItem(label=xbmc.getInfoLabel('Container.ShowTitle'), path=urls["urls"]["dash"][drm_name]["url"]+"|User-Agent=vvs-native-android/1.0.10 (Linux;Android 7.1.1) ExoPlayerLib/2.8.1")
         log(u'video url: {0}'.format(video_url))
         log(u'licenseUrl: {0}'.format(video_data['licenseUrl']))
-        playitem.setProperty('inputstreamaddon', is_helper.inputstream_addon)
+        playitem.setProperty('inputstream', is_helper.inputstream_addon)
         playitem.setProperty('inputstream.adaptive.manifest_type', 'mpd')
         playitem.setProperty('inputstream.adaptive.license_type', 'com.widevine.alpha')
         playitem.setProperty('inputstream.adaptive.license_key', video_data['licenseUrl'] +"|User-Agent="+ids.video_useragent+"&Content-Type=application/octet-stream|R{SSM}|")
@@ -1156,7 +1327,7 @@ def play_live(stream_id, brand, _try=1):
     if inputstream_installed and is_helper.check_inputstream():
         playitem.setPath(video_url + u'|User-Agent='+ids.video_useragent)
         #playitem.path= = ListItem(label=xbmc.getInfoLabel('Container.ShowTitle'), path=urls["urls"]["dash"][drm_name]["url"]+"|User-Agent=vvs-native-android/1.0.10 (Linux;Android 7.1.1) ExoPlayerLib/2.8.1")
-        playitem.setProperty('inputstreamaddon', is_helper.inputstream_addon)
+        playitem.setProperty('inputstream', is_helper.inputstream_addon)
         playitem.setProperty('inputstream.adaptive.manifest_type', 'mpd')
         playitem.setProperty('inputstream.adaptive.license_type', 'com.widevine.alpha')
         playitem.setProperty("inputstream.adaptive.manifest_update_parameter", 'full')
@@ -1335,14 +1506,14 @@ def get_url(url, headers={}, key=True, cache=False, critical=False):
             data = u''
             if e.info().get('Content-Encoding') == 'gzip':
                 # decompress content
-                buffer = StringIO(e.read())
+                buffer = BytesIO(e.read())
                 deflatedContent = gzip.GzipFile(fileobj=buffer)
                 data = deflatedContent.read()
             else:
                 data = e.read()
-            log(u'Error: ' + data.decode('utf-8'))
+            log(u'(getUrl) Error: ' + data.decode('utf-8'))
         except:
-            log(u'couldn\'t read Error content')
+            log(u'(getUrl) couldn\'t read Error content')
             pass
         if critical:
             kodiutils.notification('ERROR GETTING URL', failure)
@@ -1350,7 +1521,7 @@ def get_url(url, headers={}, key=True, cache=False, critical=False):
         else:
             return u''
     except URLError as e:
-        log(u'(getUrl) ERROR - ERROR - ERROR : ########## url:{0} === error:{1} === reason:{2} ##########'.format(url, str(e), e.reason))
+        logError(u'(getUrl) ERROR - ERROR - ERROR : ########## url:{0} === error:{1} === reason:{2} ##########'.format(url, str(e), e.reason))
         if critical:
             kodiutils.notification('ERROR GETTING URL', str(e))
             return sys.exit(0)
@@ -1358,7 +1529,7 @@ def get_url(url, headers={}, key=True, cache=False, critical=False):
             return u''
     if request.info().get('Content-Encoding') == 'gzip':
         # decompress content
-        buffer = StringIO(request.read())
+        buffer = BytesIO(request.read())
         deflatedContent = gzip.GzipFile(fileobj=buffer)
         data = deflatedContent.read()
     else:
@@ -1423,21 +1594,21 @@ def post_url(url, postdata, headers={}, json = False, key = False, critical=Fals
         try:
             if e.info().get('Content-Encoding') == 'gzip':
                 # decompress content
-                buffer = StringIO(e.read())
+                buffer = BytesIO(e.read())
                 deflatedContent = gzip.GzipFile(fileobj=buffer)
                 data = deflatedContent.read()
             else:
                 data = e.read()
-            log(u'Error: {0}'.format(data.decode('utf-8')))
+            logError(u'(post_url) Error: {0}'.format(data.decode('utf-8')))
         except:
-            log(u'couldn\'t read Error content')
+            logError(u'(post_url) couldn\'t read Error content')
             data = u''
             pass
         if critical:
             if hasattr(e, 'code') and getattr(e, 'code') == 422:
                 if 'ENT_AssetNotAvailableInCountry' in data.decode('utf-8'):
                     kodiutils.notification(u'ERROR GETTING URL', kodiutils.get_string(32003))
-                elif 'ENT_BusinessModelNotSuitable' in data:
+                elif 'ENT_BusinessModelNotSuitable' in data.decode('utf-8') or 'ENT_BUSINESS_MODEL_NOT_SUITABLE' in data.decode('utf-8'):
                     kodiutils.notification(u'ERROR GETTING URL', kodiutils.get_string(32026))
                 else:
                     kodiutils.notification(u'ERROR GETTING URL', kodiutils.get_string(32003))
@@ -1453,7 +1624,7 @@ def post_url(url, postdata, headers={}, json = False, key = False, critical=Fals
 
     if request.info().get('Content-Encoding') == 'gzip':
         # decompress content
-        buffer = StringIO(request.read())
+        buffer = BytesIO(request.read())
         deflatedContent = gzip.GzipFile(fileobj=buffer)
         data = deflatedContent.read()
     else:
@@ -1516,6 +1687,7 @@ def handle_wait_baseurl(time, title, text, url, request_interval):
     return finished
 
 def get_accesstoken(force = False):
+    log('get_accesstoken: force={0}'.format(force))
     if kodiutils.get_setting('token_uuid') == '':
         kodiutils.set_setting('token_uuid', uuid.uuid4().hex)
     if (kodiutils.get_setting('token_time') != '' and not force) and not kodiutils.get_setting_as_bool('new_token'):
@@ -1524,9 +1696,10 @@ def get_accesstoken(force = False):
         if datetime.now() < datetime(1970, 1, 1) + timedelta(seconds=timestamp):
             log('old token still good')
             return
-    log('requesting new token: force={0}'.format(force))
+    #try refreshing old token
+    if not kodiutils.get_setting_as_bool('new_token') and kodiutils.get_setting('refresh_token') != '' and refresh_accesstoken():
+        return
     kodiutils.set_setting('new_token', False)
-    auth_key_url = ids.auth_key_url
     postdata = ids.auth_key_request.format(uuid_no_hyphen=kodiutils.get_setting('token_uuid'))
     headers = {'Accept-Encoding': 'gzip'}
     if kodiutils.get_setting_as_bool('use_proxy'):
@@ -1534,12 +1707,35 @@ def get_accesstoken(force = False):
         token_data = json.loads(post_url(ids.auth_key_url, postdata, headers=headers, json = True, key = False, critical=True, proxy=True))
     else:
         token_data = json.loads(post_url(ids.auth_key_url, postdata, headers=headers, json = True, key = False, critical=True))
-    log('token data: {0}'.format(token_data))
+    log('got new token')
     kodiutils.set_setting('token_type', token_data['token_type'])
     kodiutils.set_setting('token', token_data['access_token'])
+    kodiutils.set_setting('refresh_token', token_data['refresh_token'])
     valid = datetime.now() + timedelta(milliseconds=int(token_data['expires_in']))
     timestamp = int((valid - datetime(1970, 1, 1)).total_seconds())
     kodiutils.set_setting('token_time', timestamp)
+
+def refresh_accesstoken():
+    log('refreshing old token')
+    kodiutils.set_setting('new_token', False)
+    postdata = ids.auth_key_refresh_request.format(refresh_token=kodiutils.get_setting('refresh_token'), uuid_no_hyphen=kodiutils.get_setting('token_uuid'))
+    headers = {'Accept-Encoding': 'gzip'}
+    if kodiutils.get_setting_as_bool('use_proxy'):
+        #headers['x-forwarded-for'] = u'53.{0}.{1}.{2}'.format(random.randint(0,256), random.randint(0,256), random.randint(0,256))
+        token_data = json.loads(post_url(ids.auth_key_refresh_url, postdata, headers=headers, json = True, key = False, returnError=True, proxy=True))
+    else:
+        token_data = json.loads(post_url(ids.auth_key_refresh_url, postdata, headers=headers, json = True, key = False, returnError=True))
+    if 'error' in token_data:
+        log('token refresh failed')
+        return False
+    log('got new token')
+    kodiutils.set_setting('token_type', token_data['token_type'])
+    kodiutils.set_setting('token', token_data['access_token'])
+    kodiutils.set_setting('refresh_token', token_data['refresh_token'])
+    valid = datetime.now() + timedelta(milliseconds=int(token_data['expires_in']))
+    timestamp = int((valid - datetime(1970, 1, 1)).total_seconds())
+    kodiutils.set_setting('token_time', timestamp)
+    return True
 
 def check_proxy():
     protocol = kodiutils.get_setting('current_proxy_protocol')
@@ -1578,7 +1774,7 @@ def get_new_proxy():
                 return found_new
             sitetext = site[:int(site.find('/', 8))]
             log('checking "{0}" for proxies'.format(sitetext))
-            progress.update(0, line1=kodiutils.get_string(32045).format(sitetext))
+            progress.update(0, kodiutils.get_string(32045).format(sitetext))
             data = get_url(site, key=False, critical=False)
             if data != '':
                 newproxy = json.loads(data)
@@ -1594,7 +1790,7 @@ def get_new_proxy():
                     if (progress.iscanceled()):
                         return found_new
                     if not 'error' in proxy and 'ip' in proxy and 'port' in proxy:
-                        progress.update(i*100/len(newproxy['data']), line1=kodiutils.get_string(32046).format(sitetext, '{0}://{1}:{2}'.format(proxy.get('type', proxy.get('protocol', proxy.get('proxyType'))), proxy['ip'], proxy['port']), i, len(newproxy['data'])))
+                        progress.update(int(i*100/len(newproxy['data'])), kodiutils.get_string(32046).format(sitetext, '{0}://{1}:{2}'.format(proxy.get('type', proxy.get('protocol', proxy.get('proxyType'))), proxy['ip'], proxy['port']), i, len(newproxy['data'])))
                         if (proxy['ip'] != ip or proxy['port'] != port) and proxy['ip'] != '0.0.0.0':
                             if test_proxy('{0}://{1}:{2}'.format(proxy.get('type', proxy.get('protocol', proxy.get('proxyType'))), proxy['ip'], proxy['port'])):
                                 found_new = True
@@ -1606,9 +1802,6 @@ def get_new_proxy():
     progress.close()
     return found_new
 
-def run():
-    plugin.run()
-
 def log(info):
     if kodiutils.get_setting_as_bool('debug') or xbmc.getCondVisibility('System.GetBool(debug.showloginfo)'):
         try:
@@ -1616,3 +1809,14 @@ def log(info):
         except UnicodeDecodeError:
             logger.warning(u'UnicodeDecodeError on logging')
             logger.warning(info.decode('utf-8'))
+
+def logError(info):
+    try:
+        logger.error(info)
+    except UnicodeDecodeError:
+        logger.error(u'UnicodeDecodeError on logging')
+        logger.error(info.decode('utf-8'))
+
+def run():
+    plugin.run()
+

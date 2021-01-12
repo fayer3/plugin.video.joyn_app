@@ -28,6 +28,7 @@
     <setting id="token_uuid" label="client uuid v4" type="text" default=""/>
     <setting id="new_token" label="32129" type="bool" default="false"/>
     <setting id="token" label="token" type="text" default="" enable="false"/>
+    <setting id="refresh_token" label="refresh token" type="text" default="" enable="false"/>
     <setting id="token_type" label="token type" type="text" default="" enable="false"/>
     <setting id="token_time" label="valid until" type="text" default="" enable="false"/>
   </category>
