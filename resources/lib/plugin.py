@@ -125,7 +125,9 @@ def index():
 def show_page(page_path):
     content = json.loads(post_url(ids.post_url, ids.post_request.format(variables=ids.page_variables.format(page_path=page_path),query = ids.overview_query), key = True, json = True, critical = True))
     for item in content['data']['page']['blocks']:
-        if item['__typename'] != 'ResumeLane' and item['__typename'] != 'BookmarkLane' and item['__typename'] != 'RecoForYouLane':
+        if item['__typename'] == 'Grid' and len(content['data']['page']['blocks']) <= 3:
+            show_fetch(item['id'], item['__typename'], 'False')
+        elif item['__typename'] != 'ResumeLane' and item['__typename'] != 'BookmarkLane' and item['__typename'] != 'RecoForYouLane' and not (item['__typename'] == 'TeaserLane' and 'headline' in item and item['headline'] == None) and item['__typename'] != 'CollectionLane':
             name = 'Folder'
             if 'headline' in item:
                 name = item['headline']
@@ -209,10 +211,6 @@ def show_info():
 
 @plugin.route('/fetch/id=<fetch_id>/type=<fetch_type>/override_live=<override_live>')
 def show_fetch(fetch_id, fetch_type, override_live):
-    add_fetch(fetch_id, fetch_type, override_live)
-    endOfDirectory(plugin.handle)
-
-def add_fetch(fetch_id, fetch_type, override_live):
     i = 0
     while True:
         #content = json.loads(get_url(ids.fetch_url.format(blockId=fetch_id, offset = ids.offset*i), critical=True))
@@ -228,6 +226,7 @@ def add_fetch(fetch_id, fetch_type, override_live):
         if len(content['data']['block']['assets']) != ids.offset:
             break
         i += 1
+    endOfDirectory(plugin.handle)
 
 def add_from_fetch(content):
     for asset in content:
@@ -1103,7 +1102,7 @@ def play_movie(movie_id):
     content = content['data']['movie']
     play_video(content['video']['id'], content['id'], content['tracking']['brand'], content['video']['duration'])
 
-@plugin.route('/video/sprtsmatch/<asset_id>')
+@plugin.route('/video/sportsmatch/<asset_id>')
 def play_sports_match(asset_id):
     content = json.loads(post_url(ids.post_url, ids.post_request.format(variables=ids.sport_match_variables.format(id=asset_id),query = ids.sport_match_query), key = True, json = True, critical = True))
     #content = json.loads(post_url(ids.post_url, ids.compilation_item_post.format(id=episode_id), key = True, json = True, critical = True))
@@ -1499,9 +1498,9 @@ def get_url(url, headers={}, key=True, cache=False, critical=False):
             return ids.get_config_cache(url)
         failure = str(e)
         if hasattr(e, 'code'):
-            log(u'(getUrl) ERROR - ERROR - ERROR : ########## url:{0} === error:{1} === code:{2} ##########'.format(url, failure, e.code))
+            logError(u'(getUrl) ERROR - ERROR - ERROR : ########## url:{0} === error:{1} === code:{2} ##########'.format(url, failure, e.code))
         elif hasattr(e, 'reason'):
-            log(u'(getUrl) ERROR - ERROR - ERROR : ########## url:{0} === error:{1} === reason:{2} ##########'.format(url, failure, e.reason))
+            logError(u'(getUrl) ERROR - ERROR - ERROR : ########## url:{0} === error:{1} === reason:{2} ##########'.format(url, failure, e.reason))
         try:
             data = u''
             if e.info().get('Content-Encoding') == 'gzip':
@@ -1511,9 +1510,9 @@ def get_url(url, headers={}, key=True, cache=False, critical=False):
                 data = deflatedContent.read()
             else:
                 data = e.read()
-            log(u'(getUrl) Error: ' + data.decode('utf-8'))
+            logError(u'(getUrl) Error: ' + data.decode('utf-8'))
         except:
-            log(u'(getUrl) couldn\'t read Error content')
+            logError(u'(getUrl) couldn\'t read Error content')
             pass
         if critical:
             kodiutils.notification('ERROR GETTING URL', failure)
@@ -1587,9 +1586,9 @@ def post_url(url, postdata, headers={}, json = False, key = False, critical=Fals
     except HTTPError as e:
         failure = str(e)
         if hasattr(e, 'code'):
-            log(u'(post_url) ERROR - ERROR - ERROR : ########## {0} === {1} === {2} ##########'.format(url, postdata, failure))
+            logError(u'(post_url) ERROR - ERROR - ERROR : ########## {0} === {1} === {2} ##########'.format(url, postdata, failure))
         elif hasattr(e, 'reason'):
-            log(u'(post_url) ERROR - ERROR - ERROR : ########## {0} === {1} === {2} ##########'.format(url, postdata, failure))
+            logError(u'(post_url) ERROR - ERROR - ERROR : ########## {0} === {1} === {2} ##########'.format(url, postdata, failure))
         data = u''
         try:
             if e.info().get('Content-Encoding') == 'gzip':
