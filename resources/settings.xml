@@ -2,7 +2,6 @@
 <settings>
   <category label="32118">
     <setting label="32119" type="lsep"/>
-    <setting id="debug" type="bool" label="32101" default="false"/>
     <setting id="simultanious_requests" type="number" label="32102" default="10"/>
     <setting id="number_in_name" type="bool" label="32108" default="false"/>
     <setting id="svod" type="enum" label="32110" lvalues="32111|32112|32113"/>
@@ -39,5 +38,9 @@
     <setting id="channel_name_in_stream_title" type="bool" label="32104" default="false"/>
     <setting id="ad_tries" type="number" label="32109" default="2"/>
     <setting id="add_wait" type="number" label="32124" default="10"/>
+  </category>
+  <category label="32130">
+    <setting id="debug" type="bool" label="32101" default="false"/>
+    <setting id="debug_network" type="bool" label="32131" default="false"/>
   </category>
 </settings>

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<addon id="plugin.video.joyn_app" name="Joyn" version="0.4.16+matrix.1" provider-name="fayer3">
+<addon id="plugin.video.joyn_app" name="Joyn" version="0.4.17+matrix.1" provider-name="fayer3">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
         <import addon="script.module.routing" version="0.2.3+matrix.1"/>
@@ -83,6 +83,9 @@
 - support für Sport videos hinzugefügt
 - support für 'Themen für dich' hinzugefügt
 - support für Serien, Filme und Sport entdecken hinzugefügt
+0.4.17:
+- Fehler behoben wenn das Anzeigen von Plus+ Videos deaktiviert ist
+- Option für Netzwerkverkehr debugging hinzugefügt
         </news>
         <assets>
             <icon>resources/icon.png</icon>

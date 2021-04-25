@@ -88,3 +88,6 @@ v0.4.16:
 - add support for Sport videos
 - add support for 'Themen für dich'
 - add support for discover series, movies and sport
+v0.4.17:
+- fixed bug when show PLUS+ videos was disabled
+- added network debugging option

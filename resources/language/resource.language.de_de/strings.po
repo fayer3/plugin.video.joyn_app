@@ -310,3 +310,11 @@ msgstr "weitere Proxy Abrufseiten"
 msgctxt "#32129"
 msgid "request new token"
 msgstr "neuen Token abfragen"
+
+msgctxt "#32130"
+msgid "Debugging"
+msgstr ""
+
+msgctxt "#32131"
+msgid "Debug network traffic"
+msgstr "Netzwerkverkehr Debuggen"
