@@ -866,7 +866,7 @@ def show_seasons(show_id):
     series_name = u''
     series_desc = u''
     #content_data = get_url(ids.series_url.format(seriesId = show_id), critical = False)
-    log(u'loading show: {0}, id:{1}'.format(xbmc.getInfoLabel('ListItem.Label').decode('utf-8'),show_id))
+    log(u'loading show: {0}, id:{1}'.format(xbmc.getInfoLabel('ListItem.Label'),show_id))
     content_data = post_url(ids.post_url, ids.post_request.format(variables=ids.series_variables.format(seriesId = show_id),query = ids.series_query), key = True, json = True, critical = True)
     if content_data:
         content = json.loads(content_data)
@@ -906,7 +906,7 @@ def show_seasons(show_id):
                 listitem.setInfo(type='Video', infoLabels={'Title': name, 'Plot': series_desc, 'TvShowTitle': series_name})
                 addDirectoryItem(plugin.handle,plugin.url_for(
                     show_season, season_id=season['id']), listitem, True)
-            log(u'loading bonus for show: {0}, id:{1}'.format(xbmc.getInfoLabel('ListItem.Label').decode('utf-8'),show_id))
+            log(u'loading bonus for show: {0}, id:{1}'.format(xbmc.getInfoLabel('ListItem.Label'),show_id))
             bonus_data = post_url(ids.post_url, ids.post_request.format(variables=ids.bonus_variables.format(seriesId = show_id, offset = 0),query = ids.bonus_query), key = True, json = True, critical = True)
             if bonus_data:
                 bonus = json.loads(bonus_data)
@@ -929,7 +929,7 @@ def show_season(season_id):
     setContent(plugin.handle, 'tvshows')
     current = 0
     while True:
-        log(u'loading season: {0}, id:{1}, page:{2}'.format(xbmc.getInfoLabel('ListItem.Label').decode('utf-8'),season_id, current))
+        log(u'loading season: {0}, id:{1}, page:{2}'.format(xbmc.getInfoLabel('ListItem.Label'),season_id, current))
         content = json.loads(post_url(ids.post_url, ids.post_request.format(variables=ids.season_variables.format(seasonId = season_id, offset = ids.offset*current),query = ids.season_query), key = True, json = True, critical = True))
         log(u'got {0} episodes'.format(len(content['data']['season']['episodes'])))
         for item in content['data']['season']['episodes']:
@@ -1104,14 +1104,14 @@ def show_category(category_id):
 
 @plugin.route('/video/episode/<episode_id>')
 def play_episode(episode_id):
-    log(u'loading episode: {0}, id:{1}'.format(xbmc.getInfoLabel('ListItem.Label').decode('utf-8'),episode_id))
+    log(u'loading episode: {0}, id:{1}'.format(xbmc.getInfoLabel('ListItem.Label'),episode_id))
     content = json.loads(post_url(ids.post_url, ids.post_request.format(variables=ids.episode_variables.format(episodeId=episode_id),query = ids.episode_query), key = True, json = True, critical = True))
     content = content['data']['episode']
     play_video(episode_id, content['series']['id'], content['tracking']['brand'], content['video']['duration'])
     
 @plugin.route('/video/compilation/<item_id>')
 def play_compilation_item(item_id):
-    log(u'loading compilation item: {0}, id:{1}'.format(xbmc.getInfoLabel('ListItem.Label').decode('utf-8'),item_id))
+    log(u'loading compilation item: {0}, id:{1}'.format(xbmc.getInfoLabel('ListItem.Label'),item_id))
     content = json.loads(post_url(ids.post_url, ids.post_request.format(variables=ids.compilation_item_variables.format(id=item_id),query = ids.compilation_item_query), key = True, json = True, critical = True))
     #content = json.loads(post_url(ids.post_url, ids.compilation_item_post.format(id=episode_id), key = True, json = True, critical = True))
     content = content['data']['compilationItem']
@@ -1119,7 +1119,7 @@ def play_compilation_item(item_id):
     
 @plugin.route('/video/movie/<movie_id>')
 def play_movie(movie_id):
-    log(u'loading movie: {0}, id:{1}'.format(xbmc.getInfoLabel('ListItem.Label').decode('utf-8'),movie_id))
+    log(u'loading movie: {0}, id:{1}'.format(xbmc.getInfoLabel('ListItem.Label'),movie_id))
     content = json.loads(post_url(ids.post_url, ids.post_request.format(variables=ids.movie_variables.format(id=movie_id),query = ids.movie_query), key = True, json = True, critical = True))
     #content = json.loads(post_url(ids.post_url, ids.compilation_item_post.format(id=episode_id), key = True, json = True, critical = True))
     content = content['data']['movie']
@@ -1127,7 +1127,7 @@ def play_movie(movie_id):
 
 @plugin.route('/video/sportsmatch/<asset_id>')
 def play_sports_match(asset_id):
-    log(u'loading sportsmatch: {0}, id:{1}'.format(xbmc.getInfoLabel('ListItem.Label').decode('utf-8'),asset_id))
+    log(u'loading sportsmatch: {0}, id:{1}'.format(xbmc.getInfoLabel('ListItem.Label'),asset_id))
     content = json.loads(post_url(ids.post_url, ids.post_request.format(variables=ids.sport_match_variables.format(id=asset_id),query = ids.sport_match_query), key = True, json = True, critical = True))
     #content = json.loads(post_url(ids.post_url, ids.compilation_item_post.format(id=episode_id), key = True, json = True, critical = True))
     content = content['data']['sportsMatch']
@@ -1176,7 +1176,7 @@ def play_video(video_id, tvshow_id, brand, duration):
 
     playitem = ListItem()
 
-    log(u'loading video data for: {0}, id:{1}'.format(xbmc.getInfoLabel('ListItem.Label').decode('utf-8'),video_id))
+    log(u'loading video data for: {0}, id:{1}'.format(xbmc.getInfoLabel('ListItem.Label'),video_id))
     video_data = json.loads(post_url(video_data_url,postdata='server', critical=True))
     video_url = u''
     if 'vmap'in video_data and video_data['vmap']:
@@ -1287,7 +1287,7 @@ def play_live(stream_id, brand, _try=1):
 
     playitem = ListItem()
 
-    log(u'loading live video data for: {0}, id:{1}'.format(xbmc.getInfoLabel('ListItem.Label').decode('utf-8'),stream_id))
+    log(u'loading live video data for: {0}, id:{1}'.format(xbmc.getInfoLabel('ListItem.Label'),stream_id))
     video_data = json.loads(post_url(video_data_url, postdata='server', critical=True))
 
     is_helper = None
@@ -1573,7 +1573,7 @@ def get_url(url, headers={}, key=True, cache=False, critical=False):
 def post_url(url, postdata, headers={}, json = False, key = False, critical=False, returnError=False, proxy=False, newproxy=True, hex=False):
     log(u'post: {0}, {1}'.format(url, headers))
     if kodiutils.get_setting_as_bool('debug_network'):
-        log(u'postdata: {0}'.format(postdata.decode('utf-8')))
+        log(u'postdata: {0}'.format(postdata))
     new_headers = {}
     new_headers.update(headers)
     new_headers.update({'User-Agent': ids.user_agent})
