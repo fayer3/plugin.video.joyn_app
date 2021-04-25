@@ -97,6 +97,7 @@ def index():
                     xbmcgui.Dialog().ok(kodiutils.get_string(32019), kodiutils.get_string(32020))
                     kodiutils.set_setting('last_update_warning', ids.joyn_version)
     #content = json.loads(get_url(ids.overview_url, critical = True))
+    log(u'loading overview')
     content = json.loads(post_url(ids.post_url, ids.post_request.format(variables=ids.overview_variables,query = ids.overview_query), key = True, json = True, critical = True))
     for item in content['data']['page']['blocks']:
         if item['__typename'] != 'ResumeLane' and item['__typename'] != 'BookmarkLane' and item['__typename'] != 'RecoForYouLane':
@@ -125,6 +126,7 @@ def index():
     
 @plugin.route('/page/page_path=<path:page_path>')
 def show_page(page_path):
+    log(u'loading page: {0}'.format(page_path))
     content = json.loads(post_url(ids.post_url, ids.post_request.format(variables=ids.page_variables.format(page_path=page_path),query = ids.overview_query), key = True, json = True, critical = True))
     for item in content['data']['page']['blocks']:
         if item['__typename'] == 'Grid' and len(content['data']['page']['blocks']) <= 3:
@@ -144,6 +146,7 @@ def search():
     query = xbmcgui.Dialog().input(kodiutils.get_string(32014))
     if query != '':
         #content = json.loads(get_url(ids.search_url.format(search=quote(query)), critical = True))
+        log(u'loading search: {0}'.format(query))
         content = json.loads(post_url(ids.post_url, ids.post_request.format(variables=ids.search_variables.format(search=query),query = ids.search_query), key = True, json = True, critical = True))
         if('data' in content and 'search' in content['data'] and 'results' in content['data']['search']):
             add_from_fetch(content['data']['search']['results'])
@@ -151,6 +154,7 @@ def search():
 
 @plugin.route('/epg')
 def show_epg():
+    log(u'loading main epg')
     content = json.loads(post_url(ids.post_url, ids.post_request.format(variables=ids.livestream_variables,query = ids.livestream_query), key = True, json = True, critical = True))
     #content = json.loads(get_url(ids.epg_now_url, key = False, headers = {'key':ids.middleware_token}, critical = True))
     xbmcplugin.addSortMethod(plugin.handle, xbmcplugin.SORT_METHOD_LABEL)
@@ -168,6 +172,7 @@ def show_epg():
 
 @plugin.route('/epg/id=<channel_id>/offset=<offset>')
 def show_channel_epg(channel_id, offset):
+    log(u'loading epg for channel: {0}, offset: {1}'.format(channel_id, offset))
     content = json.loads(post_url(ids.post_url, ids.post_request.format(variables=ids.epg_variables.format(brandId = channel_id, offset = offset),query = ids.epg_query), key = True, json = True, critical = True))
     if 'livestream' in content['data']['brand'] and content['data']['brand']['livestream'] != None and 'epg' in content['data']['brand']['livestream'] and content['data']['brand']['livestream']['epg'] != None and len(content['data']['brand']['livestream']['epg']) >0:
         for epg in content['data']['brand']['livestream']['epg']:
@@ -216,6 +221,7 @@ def show_fetch(fetch_id, fetch_type, override_live):
     i = 0
     while True:
         #content = json.loads(get_url(ids.fetch_url.format(blockId=fetch_id, offset = ids.offset*i), critical=True))
+        log(u'loading fetch: id: {0}, page: {1}'.format(fetch_id, i))
         content = json.loads(post_url(ids.post_url, ids.post_request.format(variables=ids.fetch_variables.format(blockId=fetch_id, offset = ids.offset*i), query = ids.fetch_query), key = True, json = True, critical=False))
         if('data' in content and 'block' in content['data'] and 'assets' in content['data']['block']):
             if content['data']['block']['__typename'] == 'LiveLane' and override_live == 'True':
@@ -317,6 +323,7 @@ def add_compilation(asset):
     if 'description' in asset and asset['description'] != None:
         description = asset['description']
     else:
+        log(u'loading compilation details for: {0}, id:{1}'.format(asset['title'], asset['id']))
         details = json.loads(post_url(ids.post_url, ids.post_request.format(variables=ids.compilation_details_variables.format(id = asset['id']), query = ids.compilation_details_query), key = True, json = True, critical=False))
         #details = json.loads(post_url(ids.post_url, ids.compilation_details_post.format(id = asset['id']), key = True, json = True, critical=False))
         if details and 'data' in details and 'compilation' in details['data'] and 'description' in details['data']['compilation']:
@@ -446,6 +453,7 @@ def add_livestreams():
     livestreams = []
 
     #content = json.loads(get_url(ids.livestream_url, critical=True))
+    log(u'loading live streams')
     content = json.loads(post_url(ids.post_url, ids.post_request.format(variables=ids.livestream_variables,query = ids.livestream_query), key = True, json = True, critical = True))
     for item in content['data']['brands']:
         if not 'livestream' in item or item['livestream'] == None:
@@ -726,11 +734,13 @@ def add_sportsMatch(asset):
 def show_channel(channel_path):
     current = 0
     #content = json.loads(get_url(ids.channel_url.format(channelpath=channel_path, offset=0), critical=True))
+    log(u'loading channel: {0}, page: {1}'.format(unquote(channel_path), current))
     content = json.loads(post_url(ids.post_url, ids.post_request.format(variables=ids.channel_variables.format(channelpath=unquote(channel_path), offset=0),query = ids.channel_query), key = True, json = True, critical = True))
     if('data' in content and 'page' in content['data'] and 'assets' in content['data']['page']):
         add_from_fetch(content['data']['page']['assets'])
         while len(content['data']['page']['assets']) == ids.offset:
             #content = json.loads(get_url(ids.channel_url.format(channelpath=channel_path, offset=ids.offset*current), critical=True))
+            log(u'loading channel: {0}, page: {1}'.format(unquote(channel_path), current))
             content = json.loads(post_url(ids.post_url, ids.post_request.format(variables=ids.channel_variables.format(channelpath=unquote(channel_path), offset=0),query = ids.channel_query), key = True, json = True, critical = True))
             if('data' in content and 'page' in content['data'] and 'assets' in content['data']['page']):
                 add_from_fetch(content['data']['page']['assets'])
@@ -750,6 +760,7 @@ def show_compilation(compilation_id):
     setContent(plugin.handle, 'tvshows')
     current = 0
     while True:
+        log(u'loading compilation: {0}, page: {1}'.format(compilation_id, current))
         content = json.loads(post_url(ids.post_url, ids.post_request.format(variables=ids.compilation_items_variables.format(id = compilation_id, offset = ids.offset*current), query = ids.compilation_items_query), key = True, json = True, critical=True))
         #content = json.loads(post_url(ids.post_url, ids.compilation_items_post.format(id = compilation_id, offset = ids.offset*current), key = True, json = True, critical = True))
         if 'data' in content and content['data'] != None and 'compilation' in content['data'] and content['data']['compilation'] != None and 'compilationItems' in content['data']['compilation'] and content['data']['compilation']['compilationItems'] != None:
@@ -857,6 +868,7 @@ def show_seasons(show_id):
     series_name = u''
     series_desc = u''
     #content_data = get_url(ids.series_url.format(seriesId = show_id), critical = False)
+    log(u'loading show: {0}, id:{1}'.format(xbmc.getInfoLabel('ListItem.Label').decode('utf-8'),show_id))
     content_data = post_url(ids.post_url, ids.post_request.format(variables=ids.series_variables.format(seriesId = show_id),query = ids.series_query), key = True, json = True, critical = True)
     if content_data:
         content = json.loads(content_data)
@@ -896,6 +908,7 @@ def show_seasons(show_id):
                 listitem.setInfo(type='Video', infoLabels={'Title': name, 'Plot': series_desc, 'TvShowTitle': series_name})
                 addDirectoryItem(plugin.handle,plugin.url_for(
                     show_season, season_id=season['id']), listitem, True)
+            log(u'loading bonus for show: {0}, id:{1}'.format(xbmc.getInfoLabel('ListItem.Label').decode('utf-8'),show_id))
             bonus_data = post_url(ids.post_url, ids.post_request.format(variables=ids.bonus_variables.format(seriesId = show_id, offset = 0),query = ids.bonus_query), key = True, json = True, critical = True)
             if bonus_data:
                 bonus = json.loads(bonus_data)
@@ -918,7 +931,9 @@ def show_season(season_id):
     setContent(plugin.handle, 'tvshows')
     current = 0
     while True:
+        log(u'loading season: {0}, id:{1}, page:{2}'.format(xbmc.getInfoLabel('ListItem.Label').decode('utf-8'),season_id, current))
         content = json.loads(post_url(ids.post_url, ids.post_request.format(variables=ids.season_variables.format(seasonId = season_id, offset = ids.offset*current),query = ids.season_query), key = True, json = True, critical = True))
+        log(u'got {0} episodes'.format(len(content['data']['season']['episodes'])))
         for item in content['data']['season']['episodes']:
             airDATE = None
             toDATE = None
@@ -959,7 +974,7 @@ def show_season(season_id):
             if len(item['licenseTypes']) == 1 and 'SVOD' in item['licenseTypes']:
                 svod = kodiutils.get_setting_as_int('svod')
                 if svod == 2:
-                    return
+                    continue
                 if svod == 0:
                     name = u'[PLUS+] ' + name
             age = u''
@@ -1002,15 +1017,19 @@ def show_season(season_id):
             listitem.setProperty('IsPlayable', 'true')
             listitem.setInfo(type='Video', infoLabels={'Title': name, 'Plot': Note_1+description+Note_2, 'Season': item['season']['number'], 'episode': item['number'], 'Duration': item['video']['duration'], 'Date': airDATE, 'mpaa': age, 'genre': genres, 'mediatype': 'episode'})
             listitem.addContextMenuItems([('Queue', 'Action(Queue)')])
+            log(u'add episode: {0}'.format(name))
             addDirectoryItem(plugin.handle,plugin.url_for(
                 play_episode, episode_id=item['video']['id']), listitem)
         if len(content['data']['season']['episodes']) != ids.offset:
             break
         current += 1
+        log(u'next page')
+    log(u'finished adding episodes, end directory')
     endOfDirectory(plugin.handle)
 
 @plugin.route('/recommendations/id=<id>')
 def show_recommendations(id):
+    log(u'loading recommendations for id:{0}'.format(id))
     content_data = post_url(ids.post_url, ids.post_request.format(variables=ids.recommendation_variables.format(id = id),query = ids.recommendation_query), key = True, json = True, critical = True)
     if content_data:
         content = json.loads(content_data)
@@ -1022,6 +1041,7 @@ def show_recommendations(id):
 def show_bonus(id):
     offset = 0
     while True:
+        log(u'loading bonus items for: id:{0}, offset:{1}'.format(id, offset))
         content_data = post_url(ids.post_url, ids.post_request.format(variables=ids.bonus_variables.format(seriesId = id, offset = ids.offset*offset),query = ids.bonus_query), key = True, json = True, critical = True)
         if content_data:
             content = json.loads(content_data)
@@ -1086,12 +1106,14 @@ def show_category(category_id):
 
 @plugin.route('/video/episode/<episode_id>')
 def play_episode(episode_id):
+    log(u'loading episode: {0}, id:{1}'.format(xbmc.getInfoLabel('ListItem.Label').decode('utf-8'),episode_id))
     content = json.loads(post_url(ids.post_url, ids.post_request.format(variables=ids.episode_variables.format(episodeId=episode_id),query = ids.episode_query), key = True, json = True, critical = True))
     content = content['data']['episode']
     play_video(episode_id, content['series']['id'], content['tracking']['brand'], content['video']['duration'])
     
 @plugin.route('/video/compilation/<item_id>')
 def play_compilation_item(item_id):
+    log(u'loading compilation item: {0}, id:{1}'.format(xbmc.getInfoLabel('ListItem.Label').decode('utf-8'),item_id))
     content = json.loads(post_url(ids.post_url, ids.post_request.format(variables=ids.compilation_item_variables.format(id=item_id),query = ids.compilation_item_query), key = True, json = True, critical = True))
     #content = json.loads(post_url(ids.post_url, ids.compilation_item_post.format(id=episode_id), key = True, json = True, critical = True))
     content = content['data']['compilationItem']
@@ -1099,6 +1121,7 @@ def play_compilation_item(item_id):
     
 @plugin.route('/video/movie/<movie_id>')
 def play_movie(movie_id):
+    log(u'loading movie: {0}, id:{1}'.format(xbmc.getInfoLabel('ListItem.Label').decode('utf-8'),movie_id))
     content = json.loads(post_url(ids.post_url, ids.post_request.format(variables=ids.movie_variables.format(id=movie_id),query = ids.movie_query), key = True, json = True, critical = True))
     #content = json.loads(post_url(ids.post_url, ids.compilation_item_post.format(id=episode_id), key = True, json = True, critical = True))
     content = content['data']['movie']
@@ -1106,6 +1129,7 @@ def play_movie(movie_id):
 
 @plugin.route('/video/sportsmatch/<asset_id>')
 def play_sports_match(asset_id):
+    log(u'loading sportsmatch: {0}, id:{1}'.format(xbmc.getInfoLabel('ListItem.Label').decode('utf-8'),asset_id))
     content = json.loads(post_url(ids.post_url, ids.post_request.format(variables=ids.sport_match_variables.format(id=asset_id),query = ids.sport_match_query), key = True, json = True, critical = True))
     #content = json.loads(post_url(ids.post_url, ids.compilation_item_post.format(id=episode_id), key = True, json = True, critical = True))
     content = content['data']['sportsMatch']
@@ -1129,11 +1153,13 @@ def play_video(video_id, tvshow_id, brand, duration):
     get_accesstoken()
     entitlement_headers = {ids.entitlement_token_header: ids.entitlement_token_header_format.format(token_type = kodiutils.get_setting('token_type'), token = kodiutils.get_setting('token'))}
     entitlement_headers['x-api-key'] = psf_config['default']['vod']['apiGatewayKey']
+    log(u'getting entitlement token')
     entitlement_token_data = json.loads(post_url(entitlementBaseUrl+ids.entitlement_token_url, postdata = postdata, headers = entitlement_headers, json = True, critical = True, returnError=True))
     if 'error' in entitlement_token_data: #token to old get new one
         if entitlement_token_data['error'] == '401':
             get_accesstoken(True)
             entitlement_headers[ids.entitlement_token_header] = ids.entitlement_token_header_format.format(token_type = kodiutils.get_setting('token_type'), token = kodiutils.get_setting('token'))
+            log(u'getting entitelment token, attempt 2')
             entitlement_token_data = json.loads(post_url(entitlementBaseUrl+ids.entitlement_token_url, postdata = postdata, headers = entitlement_headers, json = True, critical = True))
         else:
             if entitlement_token_data['error'] != '422':
@@ -1152,6 +1178,7 @@ def play_video(video_id, tvshow_id, brand, duration):
 
     playitem = ListItem()
 
+    log(u'loading video data for: {0}, id:{1}'.format(xbmc.getInfoLabel('ListItem.Label').decode('utf-8'),video_id))
     video_data = json.loads(post_url(video_data_url,postdata='server', critical=True))
     video_url = u''
     if 'vmap'in video_data and video_data['vmap']:
@@ -1238,11 +1265,13 @@ def play_live(stream_id, brand, _try=1):
     get_accesstoken()
     entitlement_headers = {ids.entitlement_token_header: ids.entitlement_token_header_format.format(token_type = kodiutils.get_setting('token_type'), token = kodiutils.get_setting('token'))}
     entitlement_headers['x-api-key'] = psf_config['default']['vod']['apiGatewayKey']
+    log(u'getting entitlement token, live')
     entitlement_token_data = json.loads(post_url(entitlementBaseUrl+ids.entitlement_token_url, postdata = postdata, headers = entitlement_headers, json = True, critical = True, returnError=True))
     if 'error' in entitlement_token_data: #token to old get new one
         if entitlement_token_data['error'] == '401':
             get_accesstoken(True)
             entitlement_headers[ids.entitlement_token_header] = ids.entitlement_token_header_format.format(token_type = kodiutils.get_setting('token_type'), token = kodiutils.get_setting('token'))
+            log(u'getting entitelment token, attempt 2, live')
             entitlement_token_data = json.loads(post_url(entitlementBaseUrl+ids.entitlement_token_url, postdata = postdata, headers = entitlement_headers, json = True, critical = True))
         else:
             if entitlement_token_data['error'] != '422':
@@ -1260,6 +1289,7 @@ def play_live(stream_id, brand, _try=1):
 
     playitem = ListItem()
 
+    log(u'loading live video data for: {0}, id:{1}'.format(xbmc.getInfoLabel('ListItem.Label').decode('utf-8'),stream_id))
     video_data = json.loads(post_url(video_data_url, postdata='server', critical=True))
 
     is_helper = None
@@ -1483,7 +1513,7 @@ def remove_favorite():
     setResolvedUrl(plugin.handle, True, ListItem("none"))
 
 def get_url(url, headers={}, key=True, cache=False, critical=False):
-    log(u'get: {0}'.format(url))
+    log(u'get: {0}, {1}'.format(url, headers))
     new_headers = {}
     new_headers.update({'User-Agent': ids.user_agent, 'Accept-Encoding': 'gzip'})
     if key:
@@ -1538,10 +1568,14 @@ def get_url(url, headers={}, key=True, cache=False, critical=False):
     data = data.decode('utf-8')
     if cache:
         ids.set_config_cache(url, data, request.info().get('Last-Modified'))
+    if kodiutils.get_setting_as_bool('debug_network'):
+        log(u'request data: {0}'.format(data))
     return data
 
 def post_url(url, postdata, headers={}, json = False, key = False, critical=False, returnError=False, proxy=False, newproxy=True, hex=False):
     log(u'post: {0}, {1}'.format(url, headers))
+    if kodiutils.get_setting_as_bool('debug_network'):
+        log(u'postdata: {0}'.format(postdata.decode('utf-8')))
     new_headers = {}
     new_headers.update(headers)
     new_headers.update({'User-Agent': ids.user_agent})
@@ -1631,8 +1665,12 @@ def post_url(url, postdata, headers={}, json = False, key = False, critical=Fals
     else:
         data = request.read()
     if hex:
+        if kodiutils.get_setting_as_bool('debug_network'):
+            log(u'request data: {0}'.format(data))
         return data
     else:
+        if kodiutils.get_setting_as_bool('debug_network'):
+            log(u'request data: {0}'.format(data.decode('utf-8')))
         return data.decode('utf-8')
 
 def handle_wait(time, commercials=1, url='', request_interval = 1000):

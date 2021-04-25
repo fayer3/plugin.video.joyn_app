@@ -313,3 +313,11 @@ msgstr ""
 msgctxt "#32129"
 msgid "request new token"
 msgstr ""
+
+msgctxt "#32130"
+msgid "Debugging"
+msgstr ""
+
+msgctxt "#32131"
+msgid "Debug network traffic"
+msgstr ""
